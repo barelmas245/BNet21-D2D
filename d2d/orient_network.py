@@ -111,24 +111,41 @@ def score_network(feature_columns, reverse_columns, directed_interactions):
     false_in_feature = set(opposite_directed_interactions).intersection(feature_columns.index)
     false_in_reverse = set(directed_interactions).intersection(reverse_columns.index)
 
-    training_columns = pandas.concat([feature_columns.loc[true_in_feature, :], reverse_columns.loc[true_in_reverse, :],
-                                      feature_columns.loc[false_in_feature, :], reverse_columns.loc[false_in_reverse, :]])
+    training_columns = pandas.concat([feature_columns.loc[true_in_feature, :], feature_columns.loc[false_in_feature, :],
+                                      reverse_columns.loc[true_in_reverse, :], reverse_columns.loc[false_in_reverse, :]])
 
-    true_labels = numpy.ones(len(directed_interactions))
-    false_labels = numpy.zeros(len(directed_interactions))
-    training_scores = numpy.append(true_labels, false_labels)
+    true_feature_labels = numpy.ones(len(true_in_feature))
+    false_feature_labels = numpy.zeros(len(false_in_feature))
+    true_reverse_labels = numpy.ones(len(true_in_feature))
+    false_reverse_labels = numpy.zeros(len(false_in_feature))
+
+    feature_labels = numpy.append(true_feature_labels, false_feature_labels)
+    reverse_labels = numpy.append(true_reverse_labels, false_reverse_labels)
+    training_scores = numpy.append(feature_labels, reverse_labels)
 
     classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001).fit(training_columns, training_scores)
 
-    scores = numpy.concatenate((true_labels, false_labels,
-                                classifier.predict_proba(feature_columns.drop(true_in_feature.union(false_in_feature)))[:, 1],
-                                classifier.predict_proba(reverse_columns.drop(true_in_reverse.union(false_in_reverse)))[:, 1]))
+    unclassified_feature_scores = classifier.predict_proba(feature_columns.drop(true_in_feature.union(false_in_feature)))[:, 1]
+    unclassified_reverse_scores = classifier.predict_proba(reverse_columns.drop(true_in_reverse.union(false_in_reverse)))[:, 1]
 
-    return pandas.DataFrame(scores, index=numpy.concatenate((
-        list(true_in_feature), list(true_in_reverse),
-        list(false_in_feature), list(false_in_reverse),
-        list(set(feature_columns.index).difference(true_in_feature.union(false_in_feature))),
-        list(set(reverse_columns.index).difference(true_in_reverse.union(false_in_reverse))))))
+    feature_scores = numpy.concatenate((true_feature_labels, false_feature_labels, unclassified_feature_scores))
+    reverse_scores = numpy.concatenate((true_reverse_labels, false_reverse_labels, unclassified_reverse_scores))
+
+    feature_index = numpy.concatenate((list(true_in_feature), list(false_in_feature),
+                                       list(set(feature_columns.index).difference(
+                                           true_in_feature.union(false_in_feature)))))
+    feature_data_frame = pandas.DataFrame(feature_scores, index=feature_index, columns=["score"]).sort_index()
+
+    reverse_index = numpy.concatenate((list(true_in_reverse), list(false_in_reverse),
+                                       list(set(reverse_columns.index).difference(
+                                           true_in_reverse.union(false_in_reverse)))))
+    reverse_data_frame = pandas.DataFrame(reverse_scores, index=reverse_index, columns=["score"]).sort_index()
+
+    assert feature_data_frame.index.equals(reverse_data_frame.index)
+
+    return pandas.DataFrame(numpy.column_stack([feature_data_frame["score"].values, reverse_data_frame["score"].values]),
+                            index=feature_data_frame.index,
+                            columns=["(u,v)", "(v,u)"])
 
 
 def orient_network(network, scores):
