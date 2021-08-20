@@ -15,6 +15,8 @@ PROPAGATE_ITERATIONS = 100
 
 ORIENTATION_EPSILON = 0.01
 
+ANNOTATED_NETWORK_PATH = r'C:\git\BNet21-D2D\results\annotated_network.gpickle'
+
 
 def read_data():
     network = get_biogrid_network()
@@ -149,19 +151,26 @@ def score_network(feature_columns, reverse_columns, directed_interactions):
 
 
 def orient_network(network, scores):
+    edges = network.edges
+    assert set(edges) == set(scores.index)
 
-    inverted = network[scores[2] < scores[3]]
-    network[3] = scores[2]/scores[3]
-    network.loc[inverted.index, 3] = scores[3]/scores[2]
+    potential_oriented_edges = scores[scores['(u,v)'] >= scores['(v,u)']].index
+    potential_inverted_edges = scores[scores['(u,v)'] < scores['(v,u)']].index
 
-    oriented = network[network[3] > 1 + ORIENTATION_EPSILON]
-    network[4] = 0
-    network.loc[oriented.index, 4] = 1
+    scores_ratio = pandas.concat([scores['(u,v)'] / scores['(v,u)'], scores['(v,u)'] / scores['(u,v)']]).max(level=0)
 
-    swapped = inverted.index & oriented.index
-    network.loc[swapped, [0,1]] = network.loc[swapped, [1,0]].values
+    edges_to_annotate = scores_ratio[scores_ratio > 1 + ORIENTATION_EPSILON].index
 
-    return network.set_index([0,1])
+    oriented_edges = list(potential_oriented_edges.intersection(edges_to_annotate))
+    inverted_edges = list(map(lambda e: (e[1], e[0]), potential_inverted_edges.intersection(edges_to_annotate)))
+
+    annotated_edges = oriented_edges
+    annotated_edges.extend(inverted_edges)
+
+    directed_network = nx.DiGraph()
+    directed_network.add_edges_from(annotated_edges)
+
+    return directed_network, annotated_edges
 
 
 if __name__ == '__main__':
@@ -173,5 +182,6 @@ if __name__ == '__main__':
 
     feature_columns, reverse_columns = generate_feature_columns(network, experiments, true_annotations)
     scores = score_network(feature_columns, reverse_columns, true_annotations)
-    oriented_network = orient_network(network, scores)
-    pass
+    annotated_network, annotated_edges = orient_network(network, scores)
+
+    nx.write_gpickle(annotated_network, ANNOTATED_NETWORK_PATH)
