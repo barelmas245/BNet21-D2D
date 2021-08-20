@@ -24,6 +24,9 @@ def get_true_annotations(filter_by_biogrid_net=True, force=False):
             for dst_gene in dst_genes.split(','):
                 if filter_by_biogrid_net and (src_gene not in biogrid_genes or dst_gene not in biogrid_genes):
                     continue
+                # Do not include both direction edges
+                if (dst_gene, src_gene) in true_annotations_list:
+                    continue
                 true_annotations_list.append((src_gene, dst_gene))
 
         with open(TRUE_ANNOTATIONS_PATH, 'w') as f:
