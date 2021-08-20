@@ -56,7 +56,7 @@ def propagate(seeds_dict, matrix, gene_to_index):
     for gene in seeds_dict:
         if gene in gene_to_index:
             # We do not differ between over/under expression
-            curr_scores[gene_to_index[gene]] = 2 ** abs(seeds_dict[gene])
+            curr_scores[gene_to_index[gene]] = abs(seeds_dict[gene])
         else:
             print(f"Not found gene {gene} in network!")
             raise RuntimeError()
@@ -184,36 +184,31 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions, cl
     opposite_directed_interactions = list(map(lambda e: (e[1], e[0]), directed_interactions))
 
     true_in_feature = set(directed_interactions).intersection(feature_columns.index)
-    true_in_reverse = set(opposite_directed_interactions).intersection(reverse_columns.index)
     false_in_feature = set(opposite_directed_interactions).intersection(feature_columns.index)
-    false_in_reverse = set(directed_interactions).intersection(reverse_columns.index)
 
     training_columns = pandas.concat([feature_columns.loc[true_in_feature, :], feature_columns.loc[false_in_feature, :],
-                                      reverse_columns.loc[true_in_reverse, :],
-                                      reverse_columns.loc[false_in_reverse, :]])
+                                      reverse_columns.loc[false_in_feature, :],
+                                      reverse_columns.loc[true_in_feature, :]])
 
     true_feature_labels = numpy.ones(len(true_in_feature))
     false_feature_labels = numpy.zeros(len(false_in_feature))
-    true_reverse_labels = numpy.ones(len(true_in_feature))
-    false_reverse_labels = numpy.zeros(len(false_in_feature))
+    true_reverse_labels = numpy.ones(len(false_in_feature))
+    false_reverse_labels = numpy.zeros(len(true_in_feature))
 
     feature_labels = numpy.append(true_feature_labels, false_feature_labels)
     reverse_labels = numpy.append(true_reverse_labels, false_reverse_labels)
     training_scores = numpy.append(feature_labels, reverse_labels)
 
-    standard_training_data = preprocessing.StandardScaler().fit_transform(training_columns)
-
-    cross_validator = StratifiedKFold(n_splits=10)
+    cv = StratifiedKFold(n_splits=10)
 
     tprs = []
     aucs = []
     mean_fpr = numpy.linspace(0, 1, 100)
 
-    fig, ax = plt.subplots(figsize=(15, 10))
-
-    for i, (train, test) in enumerate(cross_validator.split(standard_training_data, training_scores)):
-        classifier.fit(standard_training_data[train], training_scores[train])
-        viz = plot_roc_curve(classifier, standard_training_data[test], training_scores[test],
+    fig, ax = plt.subplots()
+    for i, (train, test) in enumerate(cv.split(training_columns, training_scores)):
+        classifier.fit(training_columns.iloc[train], training_scores[train])
+        viz = plot_roc_curve(classifier, training_columns.iloc[test], training_scores[test],
                              name='ROC fold {}'.format(i),
                              alpha=0.3, lw=1, ax=ax)
         interp_tpr = numpy.interp(mean_fpr, viz.fpr, viz.tpr)
@@ -236,12 +231,11 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions, cl
     tprs_upper = numpy.minimum(mean_tpr + std_tpr, 1)
     tprs_lower = numpy.maximum(mean_tpr - std_tpr, 0)
     ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-                    label=r'$\pm$ 1 std. dev.' % (std_tpr))
+                    label=r'$\pm$ 1 std. dev.')
 
     ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-           title="Receiver operating characteristic example")
+           title="ROC curve")
     ax.legend(loc="lower right")
-
     plt.savefig(CROSS_VALIDATION_ROC_PATH)
 
 
@@ -261,8 +255,8 @@ if __name__ == '__main__':
 
     classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
 
-    # cross_validation(feature_columns, reverse_columns, true_annotations, classifier)
+    cross_validation(feature_columns, reverse_columns, true_annotations, classifier)
 
-    scores = score_network(feature_columns, reverse_columns, true_annotations, classifier)
-    annotated_network, annotated_edges = orient_network(network, scores)
-    nx.write_gpickle(annotated_network, ANNOTATED_NETWORK_PATH)
+    # scores = score_network(feature_columns, reverse_columns, true_annotations, classifier)
+    # annotated_network, annotated_edges = orient_network(network, scores)
+    # nx.write_gpickle(annotated_network, ANNOTATED_NETWORK_PATH)
