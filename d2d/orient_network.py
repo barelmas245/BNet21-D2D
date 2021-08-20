@@ -4,6 +4,7 @@ import numpy
 import pandas
 import scipy
 import networkx as nx
+from scipy import sparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import plot_roc_curve, auc
@@ -36,11 +37,13 @@ def read_data():
 
 
 def generate_similarity_matrix(graph):
-    matrix = nx.normalized_laplacian_matrix(graph)
+    # TODO: check what happens when using the kernel propagation
+    # matrix = nx.normalized_laplacian_matrix(graph)
 
-    # matrix = adjacency_matrix(graph)
-    # norm_matrix = diags(1 / numpy.sqrt(matrix.sum(0).A1))
-    # matrix = norm_matrix * matrix * norm_matrix
+    matrix = nx.to_scipy_sparse_matrix(graph, graph.nodes)
+
+    norm_matrix = sparse.diags(1 / numpy.sqrt(matrix.sum(0).A1))
+    matrix = norm_matrix * matrix * norm_matrix
 
     return PROPAGATE_ALPHA * matrix
 
@@ -53,7 +56,7 @@ def propagate(seeds_dict, matrix, gene_to_index):
     for gene in seeds_dict:
         if gene in gene_to_index:
             # We do not differ between over/under expression
-            curr_scores[gene_to_index[gene]] = abs(seeds_dict[gene])
+            curr_scores[gene_to_index[gene]] = 2 ** abs(seeds_dict[gene])
         else:
             print(f"Not found gene {gene} in network!")
             raise RuntimeError()
@@ -265,6 +268,6 @@ if __name__ == '__main__':
 
     cross_validation(feature_columns, reverse_columns, true_annotations, classifier)
 
-    # scores = score_network(feature_columns, reverse_columns, true_annotations, classifier)
-    # annotated_network, annotated_edges = orient_network(network, scores)
-    # nx.write_gpickle(annotated_network, ANNOTATED_NETWORK_PATH)
+    scores = score_network(feature_columns, reverse_columns, true_annotations, classifier)
+    annotated_network, annotated_edges = orient_network(network, scores)
+    nx.write_gpickle(annotated_network, ANNOTATED_NETWORK_PATH)

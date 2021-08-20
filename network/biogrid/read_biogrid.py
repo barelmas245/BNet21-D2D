@@ -140,11 +140,19 @@ def get_biogrid_network(force=False):
             else:
                 distinct_interactions_dict[interaction_tuple] = {entry.exp_system}
 
-        g = nx.Graph()
-        g.add_weighted_edges_from(list(map(
+        weighted_edges = list(map(
             lambda i: (i[0], i[1], calculate_interaction_score(distinct_interactions_dict[i])),
-            distinct_interactions_dict)))
+            distinct_interactions_dict))
+        # Remove edges with weight 0
+        weighted_edges = list(filter(lambda e_data: e_data[2] != 0, weighted_edges))
+
+        g = nx.Graph()
+        g.add_weighted_edges_from(weighted_edges)
         g.remove_edges_from(nx.selfloop_edges(g))
+        g.remove_nodes_from(list(nx.isolates(g)))
+
+        largest_component = max(nx.connected_components(g), key=len)
+        g = g.subgraph(largest_component).copy()
 
         nx.write_gpickle(g, BIOGRID_NET_PATH)
 
