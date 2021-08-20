@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import json
 import os
 
@@ -26,6 +27,7 @@ def get_gene_expressions_data(filter_by_biogrid_net=True, force=False):
             if filter_by_biogrid_net and i not in biogrid_genes:
                 continue
             targets_dict = raw_data[i].to_dict()
+            targets_dict = {key: value for key, value in targets_dict.items() if abs(value) >= np.log2(1.7)}
             experiments_dict[i] = dict([(key, val) for key, val in targets_dict.items() if key in biogrid_genes]) if filter_by_biogrid_net else targets_dict
 
         with open(EXPRESSIONS_PATH, 'w') as f:
