@@ -120,17 +120,15 @@ def score_network(feature_columns, reverse_columns, directed_interactions, class
     opposite_directed_interactions = list(map(lambda e: (e[1], e[0]), directed_interactions))
 
     true_in_feature = set(directed_interactions).intersection(feature_columns.index)
-    true_in_reverse = set(opposite_directed_interactions).intersection(reverse_columns.index)
     false_in_feature = set(opposite_directed_interactions).intersection(feature_columns.index)
-    false_in_reverse = set(directed_interactions).intersection(reverse_columns.index)
 
     training_columns = pandas.concat([feature_columns.loc[true_in_feature, :], feature_columns.loc[false_in_feature, :],
-                                      reverse_columns.loc[true_in_reverse, :], reverse_columns.loc[false_in_reverse, :]])
+                                      reverse_columns.loc[false_in_feature, :], reverse_columns.loc[true_in_feature, :]])
 
     true_feature_labels = numpy.ones(len(true_in_feature))
     false_feature_labels = numpy.zeros(len(false_in_feature))
-    true_reverse_labels = numpy.ones(len(true_in_feature))
-    false_reverse_labels = numpy.zeros(len(false_in_feature))
+    true_reverse_labels = numpy.ones(len(false_in_feature))
+    false_reverse_labels = numpy.zeros(len(true_in_feature))
 
     feature_labels = numpy.append(true_feature_labels, false_feature_labels)
     reverse_labels = numpy.append(true_reverse_labels, false_reverse_labels)
@@ -138,20 +136,18 @@ def score_network(feature_columns, reverse_columns, directed_interactions, class
 
     fitted_classifier = classifier.fit(training_columns, training_scores)
 
-    unclassified_feature_scores = fitted_classifier.predict_proba(feature_columns.drop(true_in_feature.union(false_in_feature)))[:, 1]
-    unclassified_reverse_scores = fitted_classifier.predict_proba(reverse_columns.drop(true_in_reverse.union(false_in_reverse)))[:, 1]
+    unclassified_feature_scores = fitted_classifier.predict_proba(feature_columns.drop(training_columns.index))[:, 1]
+    unclassified_reverse_scores = fitted_classifier.predict_proba(reverse_columns.drop(training_columns.index))[:, 1]
 
     feature_scores = numpy.concatenate((true_feature_labels, false_feature_labels, unclassified_feature_scores))
     reverse_scores = numpy.concatenate((true_reverse_labels, false_reverse_labels, unclassified_reverse_scores))
 
     feature_index = numpy.concatenate((list(true_in_feature), list(false_in_feature),
-                                       list(set(feature_columns.index).difference(
-                                           true_in_feature.union(false_in_feature)))))
+                                       list(feature_columns.index.difference(training_columns.index))))
     feature_data_frame = pandas.DataFrame(feature_scores, index=feature_index, columns=["score"]).sort_index()
 
-    reverse_index = numpy.concatenate((list(true_in_reverse), list(false_in_reverse),
-                                       list(set(reverse_columns.index).difference(
-                                           true_in_reverse.union(false_in_reverse)))))
+    reverse_index = numpy.concatenate((list(false_in_feature), list(true_in_feature),
+                                       list(reverse_columns.index.difference(training_columns.index))))
     reverse_data_frame = pandas.DataFrame(reverse_scores, index=reverse_index, columns=["score"]).sort_index()
 
     assert feature_data_frame.index.equals(reverse_data_frame.index)
@@ -253,8 +249,7 @@ if __name__ == '__main__':
     network, true_annotations, experiments = read_data()
     true_annotations = list(map(lambda e: tuple(e), true_annotations))
 
-    # TODO: check that all true directed interacions are inside the network
-    # merged_network = pandas.concat([directed_interactions, network.drop(directed_interactions.index & network.index)])
+    # TODO: assert that all true directed interacions are inside the network
 
     if os.path.isfile(FEATURE_COLS_PATH) and os.path.isfile(REVERSE_COLS_PATH):
         feature_columns = pandas.read_pickle(FEATURE_COLS_PATH)
@@ -266,7 +261,7 @@ if __name__ == '__main__':
 
     classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
 
-    cross_validation(feature_columns, reverse_columns, true_annotations, classifier)
+    # cross_validation(feature_columns, reverse_columns, true_annotations, classifier)
 
     scores = score_network(feature_columns, reverse_columns, true_annotations, classifier)
     annotated_network, annotated_edges = orient_network(network, scores)
