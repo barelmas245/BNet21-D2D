@@ -7,7 +7,7 @@ import networkx as nx
 from network.biogrid.conf import BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES, ONLY_PHYSICAL
 
 YEAST_BIOGRID_TXT_PATH = r'C:\git\BNet21-D2D\sources\BIOGRID-ORGANISM-Saccharomyces_cerevisiae_S288c-4.4.199.tab3.txt'
-BIOGRID_NET_PATH = r'C:\git\BNet21-D2D\sources\generated\biogrid_net.pickle'
+BIOGRID_NET_PATH = r'C:\git\BNet21-D2D\sources\generated\biogrid_net.gpickle'
 
 # YEAST_BIOGRID_DATA_PATH = r'C:\git\BNet21-D2D\sources\yeast_biogrid_data.json'
 # YEAST_BIOGRID_PROTEINS_IDS_PATH = r'C:\git\BNet21-D2D\sources\generated\biogrid_yeast_proteins_ids.json'
@@ -128,8 +128,7 @@ def read_biogrod_data(only_physical=ONLY_PHYSICAL):
 
 def get_biogrid_network(force=False):
     if os.path.isfile(BIOGRID_NET_PATH) and not force:
-        with open(BIOGRID_NET_PATH, 'rb') as f:
-            return pickle.load(f)
+        return nx.read_gpickle(BIOGRID_NET_PATH)
     else:
         data = read_biogrod_data()
 
@@ -147,8 +146,7 @@ def get_biogrid_network(force=False):
             distinct_interactions_dict)))
         g.remove_edges_from(nx.selfloop_edges(g))
 
-        with open(BIOGRID_NET_PATH, 'wb') as f:
-            pickle.dump(g, f)
+        nx.write_gpickle(g, BIOGRID_NET_PATH)
 
         return g
 
