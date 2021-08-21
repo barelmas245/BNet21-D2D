@@ -5,29 +5,17 @@ from sklearn.metrics import plot_roc_curve, auc
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 
-from d2d.d2d import read_data
+from d2d.d2d import read_data, get_training_features_and_scores
 from runs.features import get_features
 from runs.consts import FEATURE_COLS_PATH, REVERSE_COLS_PATH, CROSS_VALIDATION_ROC_PATH
 
 
 def cross_validation(feature_columns, reverse_columns, directed_interactions, classifier):
-    opposite_directed_interactions = list(map(lambda e: (e[1], e[0]), directed_interactions))
+    training_feature_columns, training_reverse_columns, training_feature_scores, training_reverse_scores = \
+        get_training_features_and_scores(feature_columns, reverse_columns, directed_interactions)
 
-    true_in_feature = set(directed_interactions).intersection(feature_columns.index)
-    false_in_feature = set(opposite_directed_interactions).intersection(feature_columns.index)
-
-    training_columns = pandas.concat([feature_columns.loc[true_in_feature, :], feature_columns.loc[false_in_feature, :],
-                                      reverse_columns.loc[false_in_feature, :],
-                                      reverse_columns.loc[true_in_feature, :]])
-
-    true_feature_labels = np.ones(len(true_in_feature))
-    false_feature_labels = np.zeros(len(false_in_feature))
-    true_reverse_labels = np.ones(len(false_in_feature))
-    false_reverse_labels = np.zeros(len(true_in_feature))
-
-    feature_labels = np.append(true_feature_labels, false_feature_labels)
-    reverse_labels = np.append(true_reverse_labels, false_reverse_labels)
-    training_scores = np.append(feature_labels, reverse_labels)
+    training_columns = pandas.concat([training_feature_columns, training_reverse_columns])
+    training_scores = np.append(training_feature_scores, training_reverse_scores)
 
     cv = StratifiedKFold(n_splits=10)
 

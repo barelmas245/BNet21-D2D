@@ -58,37 +58,49 @@ def generate_feature_columns(network, experiments_dict,
     return feature_columns, reverse_columns
 
 
-def score_network(feature_columns, reverse_columns, directed_interactions, classifier):
+def get_training_features_and_scores(feature_columns, reverse_columns, directed_interactions):
     opposite_directed_interactions = list(map(lambda e: (e[1], e[0]), directed_interactions))
 
     true_in_feature = set(directed_interactions).intersection(feature_columns.index)
     false_in_feature = set(opposite_directed_interactions).intersection(feature_columns.index)
 
-    training_columns = pandas.concat([feature_columns.loc[true_in_feature, :], feature_columns.loc[false_in_feature, :],
-                                      reverse_columns.loc[false_in_feature, :], reverse_columns.loc[true_in_feature, :]])
+    training_feature_columns = pandas.concat([feature_columns.loc[true_in_feature, :],
+                                              feature_columns.loc[false_in_feature, :]])
+    training_reverse_columns = pandas.concat([reverse_columns.loc[false_in_feature, :],
+                                              reverse_columns.loc[true_in_feature, :]])
+
 
     true_feature_labels = np.ones(len(true_in_feature))
     false_feature_labels = np.zeros(len(false_in_feature))
     true_reverse_labels = np.ones(len(false_in_feature))
     false_reverse_labels = np.zeros(len(true_in_feature))
 
-    feature_labels = np.append(true_feature_labels, false_feature_labels)
-    reverse_labels = np.append(true_reverse_labels, false_reverse_labels)
-    training_scores = np.append(feature_labels, reverse_labels)
+    training_feature_scores = np.append(true_feature_labels, false_feature_labels)
+    training_reverse_scores = np.append(true_reverse_labels, false_reverse_labels)
+
+    return training_feature_columns, training_reverse_columns, training_feature_scores, training_reverse_scores
+
+
+def score_network(feature_columns, reverse_columns, directed_interactions, classifier):
+    training_feature_columns, training_reverse_columns, training_feature_scores, training_reverse_scores = \
+        get_training_features_and_scores(feature_columns, reverse_columns, directed_interactions)
+
+    training_columns = pandas.concat([training_feature_columns, training_reverse_columns])
+    training_scores = np.append(training_feature_scores, training_reverse_scores)
 
     fitted_classifier = classifier.fit(training_columns, training_scores)
 
     unclassified_feature_scores = fitted_classifier.predict_proba(feature_columns.drop(training_columns.index))[:, 1]
     unclassified_reverse_scores = fitted_classifier.predict_proba(reverse_columns.drop(training_columns.index))[:, 1]
 
-    feature_scores = np.concatenate((true_feature_labels, false_feature_labels, unclassified_feature_scores))
-    reverse_scores = np.concatenate((true_reverse_labels, false_reverse_labels, unclassified_reverse_scores))
+    feature_scores = np.concatenate((training_feature_scores, unclassified_feature_scores))
+    reverse_scores = np.concatenate((training_reverse_scores, unclassified_reverse_scores))
 
-    feature_index = np.concatenate((list(true_in_feature), list(false_in_feature),
+    feature_index = np.concatenate((list(training_feature_columns.index),
                                     list(feature_columns.index.difference(training_columns.index))))
     feature_data_frame = pandas.DataFrame(feature_scores, index=feature_index, columns=["score"]).sort_index()
 
-    reverse_index = np.concatenate((list(false_in_feature), list(true_in_feature),
+    reverse_index = np.concatenate((list(training_reverse_columns.index),
                                     list(reverse_columns.index.difference(training_columns.index))))
     reverse_data_frame = pandas.DataFrame(reverse_scores, index=reverse_index, columns=["score"]).sort_index()
 
