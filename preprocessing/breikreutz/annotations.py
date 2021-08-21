@@ -9,7 +9,9 @@ def get_true_annotations(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH, dst_pat
                          filter_by_biogrid_net=True, force=False):
     if os.path.isfile(dst_path) and not force:
         with open(dst_path, 'r') as f:
-            return json.load(f)
+            true_annotations_list = json.load(f)
+            # Represent edges as tuples and not list
+            return list(map(lambda e: tuple(e), true_annotations_list))
     else:
         if filter_by_biogrid_net:
             biogrid_net = get_biogrid_network()
