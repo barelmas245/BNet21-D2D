@@ -1,5 +1,6 @@
+# Confidence scores for different types of experiment types from BIOGRID
+# The scores are based on Gitter et al. 2010
 BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES = {
-    # According to Gitter et al. 2010
     'Affinity Capture-Luminescence': 0.5,
     'Affinity Capture-MS': 0.5,
     'Affinity Capture-RNA': 0.7,
@@ -25,9 +26,8 @@ BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES = {
     'Synthetic Lethality': 0,
     'Synthetic Rescue': 0,
     'Two-hybrid': 0.3,
-
-    # Additional experiment type not mentioned in Gitter et al. 2010
-    'Proximity Label-MS': 0
+    'Proximity Label-MS': 0  # Additional experiment type not mentioned in Gitter et al. 2010
 }
 
+# Use only physical interactions (and not genetic ones)
 ONLY_PHYSICAL = True

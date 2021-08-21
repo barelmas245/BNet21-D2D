@@ -1,20 +1,11 @@
 import os
-import json
-import pickle
 import numpy as np
 import networkx as nx
 
-from network.biogrid.conf import BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES, ONLY_PHYSICAL
+from biogrid.conf import BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES, ONLY_PHYSICAL
 
 YEAST_BIOGRID_TXT_PATH = r'C:\git\BNet21-D2D\sources\BIOGRID-ORGANISM-Saccharomyces_cerevisiae_S288c-4.4.199.tab3.txt'
 BIOGRID_NET_PATH = r'C:\git\BNet21-D2D\sources\generated\biogrid_net.gpickle'
-
-# YEAST_BIOGRID_DATA_PATH = r'C:\git\BNet21-D2D\sources\yeast_biogrid_data.json'
-# YEAST_BIOGRID_PROTEINS_IDS_PATH = r'C:\git\BNet21-D2D\sources\generated\biogrid_yeast_proteins_ids.json'
-# YEAST_BIOGRID_PROTEINS_IDS_MAP_TO_UNIPROT_PATH = r'C:\git\BNet21-D2D\sources\generated\map_biogrid_ids_to_uniprot.json'
-# YEAST_BIOGRID_FAILED_IDS_PATH = r'C:\git\BNet21-D2D\sources\generated\failed_ids.json'
-#
-# YEAST_BIOGRID_DISTINCT_INTERACTIONS_PATH = r'C:\git\BNet21-D2D\sources\generated\biogrid_interactions.pickle'
 
 
 class BioGridInteractorData(object):
@@ -97,40 +88,23 @@ class BioGridEntryData(object):
         return None if score_str == '-' else float(score_str)
 
 
-# class ProteinInteraction(object):
-#     def __init__(self, interactor_a, interactor_b, breikreutz=[]):
-#         self.interactor_a = interactor_a
-#         self.interactor_b = interactor_b
-#         self.breikreutz = breikreutz
-#
-#         self.score = None
-#         self.calculate_score()
-#
-#     @property
-#     def relevant_experiments(self):
-#         return list(filter(lambda exp: exp in BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES, self.breikreutz))
-#
-#     def calculate_score(self):
-#         self.score = 1 - np.prod(list(map(
-#             lambda exp: 1 - BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES[exp], list(set(self.breikreutz)))))
-
 def calculate_interaction_score(interaction_experiments):
     return 1 - np.prod(list(map(
         lambda exp: 1 - BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES[exp], list(set(interaction_experiments)))))
 
 
-def read_biogrod_data(only_physical=ONLY_PHYSICAL):
-    with open(YEAST_BIOGRID_TXT_PATH, 'r') as f:
+def read_biogrod_data(path=YEAST_BIOGRID_TXT_PATH, only_physical=ONLY_PHYSICAL):
+    with open(path, 'r') as f:
         data = f.readlines()
     all_interactions = list(map(lambda entry_line: BioGridEntryData(entry_line.replace('\n', '')), data[1:]))
     return list(filter(lambda entry: entry.exp_system_type == 'physical', all_interactions)) if only_physical else all_interactions
 
 
-def get_biogrid_network(force=False):
-    if os.path.isfile(BIOGRID_NET_PATH) and not force:
-        return nx.read_gpickle(BIOGRID_NET_PATH)
+def get_biogrid_network(src_path=YEAST_BIOGRID_TXT_PATH, dst_path=BIOGRID_NET_PATH, force=False):
+    if os.path.isfile(dst_path) and not force:
+        return nx.read_gpickle(dst_path)
     else:
-        data = read_biogrod_data()
+        data = read_biogrod_data(src_path)
 
         distinct_interactions_dict = dict()
         for entry in data:
@@ -154,71 +128,10 @@ def get_biogrid_network(force=False):
         largest_component = max(nx.connected_components(g), key=len)
         g = g.subgraph(largest_component).copy()
 
-        nx.write_gpickle(g, BIOGRID_NET_PATH)
+        nx.write_gpickle(g, dst_path)
 
         return g
 
 
-# def get_all_proteins_biogrid_ids(biogrid_data):
-#     a_ids = set(list(map(lambda biogrid_entry: biogrid_entry.interactor_a.biogrid_id, biogrid_data)))
-#     b_ids = set(list(map(lambda biogrid_entry: biogrid_entry.interactor_a.biogrid_id, biogrid_data)))
-#     return a_ids.union(b_ids)
-
-
 if __name__ == '__main__':
     net = get_biogrid_network(force=True)
-    # data = read_biogrod_data()
-    #
-    # distinct_interactions_dict = dict()
-    # for entry in data:
-    #     interaction_tuple = (entry.interactor_a.symbol, entry.interactor_b.symbol)
-    #     if interaction_tuple in distinct_interactions_dict:
-    #         distinct_interactions_dict[interaction_tuple].add(entry.exp_system)
-    #     else:
-    #         distinct_interactions_dict[interaction_tuple] = {entry.exp_system}
-    #
-    # g = nx.Graph()
-    # g.add_weighted_edges_from(list(map(
-    #     lambda i: (i[0], i[1], calculate_interaction_score(distinct_interactions_dict[i])),
-    #     distinct_interactions_dict)))
-    #
-    # with open(BIOGRID_NET_PATH, 'wb') as f:
-    #     pickle.dump(g, f)
-
-    # all_ids = get_all_proteins_biogrid_ids(data)
-    # with open(YEAST_BIOGRID_PROTEINS_IDS_PATH, 'w') as f:
-    #     f.write(json.dumps(list(all_ids)))
-
-    # if os.path.isfile(YEAST_BIOGRID_PROTEINS_IDS_MAP_TO_UNIPROT_PATH):
-    #     with open(YEAST_BIOGRID_PROTEINS_IDS_MAP_TO_UNIPROT_PATH, 'r') as f:
-    #         map_to_uniprot = json.load(f)
-    # else:
-    #     map_to_uniprot = map_identifiers(all_ids, from_id=BIOGRID_ID, to_id=UNIPROT_ID)
-    #     with open(YEAST_BIOGRID_PROTEINS_IDS_MAP_TO_UNIPROT_PATH, 'w') as f:
-    #         f.write(json.dumps(map_to_uniprot))
-    #
-    # failed_set = set()
-    # distinct_interactions_dict = dict()
-    # for entry in data:
-    #     uniprot_a = map_to_uniprot.get(entry.interactor_a.biogrid_id)
-    #     uniprot_b = map_to_uniprot.get(entry.interactor_b.biogrid_id)
-    #     if uniprot_a is None:
-    #         failed_set.add(entry.interactor_a.biogrid_id)
-    #         # print(f"Failed to map {entry.interactor_a.biogrid_id}")
-    #         continue
-    #     if uniprot_b is None:
-    #         failed_set.add(entry.interactor_b.biogrid_id)
-    #         # print(f"Failed to map {entry.interactor_b.biogrid_id}")
-    #         continue
-    #     interaction_tuple = (uniprot_a, uniprot_b)
-    #     if interaction_tuple in distinct_interactions_dict:
-    #         distinct_interactions_dict[interaction_tuple].append(entry.exp_system)
-    #     else:
-    #         distinct_interactions_dict[interaction_tuple] = [entry.exp_system]
-    # with open(YEAST_BIOGRID_FAILED_IDS_PATH, 'w') as f:
-    #     f.write(json.dumps(list(failed_set)))
-    #
-    # all_distinct_interactions = list(map(lambda i: ProteinInteraction(i[0], i[1], distinct_interactions_dict[i]),
-    #                                      distinct_interactions_dict))
-    # with open(YEAST_BIOGRID_DISTINCT_INTERACTIONS_PATH, 'wb') as f:
-    #     pickle.dump(all_distinct_interactions, f)

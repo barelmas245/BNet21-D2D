@@ -1,15 +1,16 @@
 import json
 import os
 
-from network.biogrid.read_biogrid import get_biogrid_network
+from biogrid.read_biogrid import get_biogrid_network
 
-TRUE_ANNOTATIONS_DATA_PATH = r'C:\git\BNet21-D2D\sources\true_annotations\Breitkreutz data.txt'
-TRUE_ANNOTATIONS_PATH = r'C:\git\BNet21-D2D\sources\generated\true_annotations.json'
+TRUE_ANNOTATIONS_DATA_PATH = r'C:\git\BNet21-D2D\sources\breikreutz\true_annotations\Breitkreutz_annotations.txt'
+TRUE_ANNOTATIONS_PATH = r'C:\git\BNet21-D2D\sources\generated\breitkeurtz_annotations.json'
 
 
-def get_true_annotations(filter_by_biogrid_net=True, force=False):
-    if os.path.isfile(TRUE_ANNOTATIONS_PATH) and not force:
-        with open(TRUE_ANNOTATIONS_PATH, 'r') as f:
+def get_true_annotations(src_path=TRUE_ANNOTATIONS_DATA_PATH, dst_path=TRUE_ANNOTATIONS_PATH,
+                         filter_by_biogrid_net=True, force=False):
+    if os.path.isfile(dst_path) and not force:
+        with open(dst_path, 'r') as f:
             return json.load(f)
     else:
         if filter_by_biogrid_net:
@@ -17,7 +18,7 @@ def get_true_annotations(filter_by_biogrid_net=True, force=False):
             biogrid_genes = biogrid_net.nodes
 
         true_annotations_list = []
-        with open(TRUE_ANNOTATIONS_DATA_PATH, 'r') as f:
+        with open(src_path, 'r') as f:
             data = f.readlines()
         for entry in data:
             _, src_gene, _, _, dst_genes = entry.replace('\n', '').split('\t')
@@ -29,7 +30,7 @@ def get_true_annotations(filter_by_biogrid_net=True, force=False):
                     continue
                 true_annotations_list.append((src_gene, dst_gene))
 
-        with open(TRUE_ANNOTATIONS_PATH, 'w') as f:
+        with open(dst_path, 'w') as f:
             json.dump(true_annotations_list, f)
 
         return true_annotations_list

@@ -8,10 +8,9 @@ from scipy import sparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import plot_roc_curve, auc
-from sklearn import preprocessing
 import matplotlib.pyplot as plt
 
-from network.biogrid.read_biogrid import get_biogrid_network
+from biogrid.read_biogrid import get_biogrid_network
 from breikreutz.experiments import get_gene_expressions_data
 from breikreutz.annotations import get_true_annotations
 
@@ -81,7 +80,7 @@ def generate_propagation_data(network):
     return gene_to_idx, matrix
 
 
-def generate_feature_columns(network, experiments_dict, true_annotations):
+def generate_feature_columns(network, experiments_dict):
     gene_to_idx, matrix = generate_propagation_data(network)
 
     # All edges in the graph
@@ -89,10 +88,6 @@ def generate_feature_columns(network, experiments_dict, true_annotations):
     v_nodes = list(map(lambda e: e[1], network.edges))
     u_indexes = list(map(lambda node: gene_to_idx[node], u_nodes))
     v_indexes = list(map(lambda node: gene_to_idx[node], v_nodes))
-
-    # Only the edges we have knowledge of
-    training_u_indexes = list(map(lambda e: gene_to_idx[e[0]], true_annotations))
-    training_v_indexes = list(map(lambda e: gene_to_idx[e[1]], true_annotations))
 
     def generate_column(experiment):
         # We always have only single source and multiple targets
@@ -249,14 +244,14 @@ if __name__ == '__main__':
         feature_columns = pandas.read_pickle(FEATURE_COLS_PATH)
         reverse_columns = pandas.read_pickle(REVERSE_COLS_PATH)
     else:
-        feature_columns, reverse_columns = generate_feature_columns(network, experiments, true_annotations)
+        feature_columns, reverse_columns = generate_feature_columns(network, experiments)
         feature_columns.to_pickle(FEATURE_COLS_PATH)
         reverse_columns.to_pickle(REVERSE_COLS_PATH)
 
     classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
 
-    cross_validation(feature_columns, reverse_columns, true_annotations, classifier)
+    # cross_validation(feature_columns, reverse_columns, true_annotations, classifier)
 
-    # scores = score_network(feature_columns, reverse_columns, true_annotations, classifier)
-    # annotated_network, annotated_edges = orient_network(network, scores)
-    # nx.write_gpickle(annotated_network, ANNOTATED_NETWORK_PATH)
+    scores = score_network(feature_columns, reverse_columns, true_annotations, classifier)
+    annotated_network, annotated_edges = orient_network(network, scores)
+    nx.write_gpickle(annotated_network, ANNOTATED_NETWORK_PATH)
