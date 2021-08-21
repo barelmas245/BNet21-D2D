@@ -98,7 +98,7 @@ def score_network(feature_columns, reverse_columns, directed_interactions, class
                             columns=["(u,v)", "(v,u)"])
 
 
-def orient_network(network, scores):
+def orient_network(network, scores, orientation_epsilon=ORIENTATION_EPSILON):
     edges = network.edges
     assert set(edges) == set(scores.index)
 
@@ -107,7 +107,7 @@ def orient_network(network, scores):
 
     scores_ratio = pandas.concat([scores['(u,v)'] / scores['(v,u)'], scores['(v,u)'] / scores['(u,v)']]).max(level=0)
 
-    edges_to_annotate = scores_ratio[scores_ratio > 1 + ORIENTATION_EPSILON].index
+    edges_to_annotate = scores_ratio[scores_ratio > 1 + orientation_epsilon].index
 
     oriented_edges = list(potential_oriented_edges.intersection(edges_to_annotate))
     inverted_edges = list(map(lambda e: (e[1], e[0]), potential_inverted_edges.intersection(edges_to_annotate)))
