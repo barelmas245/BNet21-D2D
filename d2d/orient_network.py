@@ -1,9 +1,7 @@
-import math
-import numpy
+import os
 import pandas
-import scipy
+import numpy as np
 import networkx as nx
-from scipy import sparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import plot_roc_curve, auc
@@ -13,7 +11,10 @@ from preprocessing.biogrid.read_biogrid import get_biogrid_network
 from preprocessing.breikreutz.experiments import get_gene_expressions_data
 from preprocessing.breikreutz.annotations import get_true_annotations
 
-from consts import *
+from consts import FEATURE_COLS_PATH, REVERSE_COLS_PATH, CROSS_VALIDATION_ROC_PATH, ANNOTATED_NETWORK_PATH,\
+    ORIENTATION_EPSILON
+from propagate import generate_similarity_matrix, propagate, \
+    RWR_PROPAGATION, PROPAGATE_ALPHA, PROPAGATE_EPSILON, PROPAGATE_ITERATIONS, PROPAGATE_SMOOTH
 
 
 def read_data():
@@ -23,51 +24,9 @@ def read_data():
     return network, directed_interactions, gene_expressions
 
 
-def generate_similarity_matrix(graph, alpha, method):
-    if method == RWR_PROPAGATION:
-        matrix = nx.to_scipy_sparse_matrix(graph, graph.nodes)
-        norm_matrix = sparse.diags(1 / numpy.sqrt(matrix.sum(0).A1))
-        matrix = norm_matrix * matrix * norm_matrix
-        return alpha * matrix
-    if method == KERNEL_PROPAGATION:
-        matrix = nx.normalized_laplacian_matrix(graph)
-        return alpha * matrix
-    else:
-        raise ValueError("Unsupported propagation method")
-
-
-def propagate(seeds_dict, matrix, gene_to_index,
-              alpha, epsilon, method,
-              num_iterations=PROPAGATE_ITERATIONS, smooth=PROPAGATE_SMOTH, prior_weight_func=abs):
-    num_genes = matrix.shape[0]
-    curr_scores = numpy.zeros(num_genes)
-
-    # Set the prior scores
-    for gene in seeds_dict:
-        assert gene in gene_to_index, f"Not found gene {gene} in network!"
-        curr_scores[gene_to_index[gene]] = prior_weight_func(seeds_dict[gene])
-    # Normalize the prior scores
-    curr_scores = curr_scores / sum(curr_scores)
-
-    if method == RWR_PROPAGATION:
-        prior_vec = (1 - alpha) * curr_scores
-        for _ in range(num_iterations):
-            new_scores = curr_scores.copy()
-            curr_scores = matrix.dot(new_scores) + prior_vec
-
-            if math.sqrt(scipy.linalg.norm(new_scores - curr_scores)) < epsilon:
-                break
-        return curr_scores
-    if method == KERNEL_PROPAGATION:
-        from scipy.sparse.linalg import expm_multiply
-        return expm_multiply(-matrix, curr_scores, start=0, stop=smooth, endpoint=True)[-1]
-    else:
-        raise ValueError("Unsupported propagation method")
-
-
 def generate_feature_columns(network, experiments_dict,
                              alpha=PROPAGATE_ALPHA, epsilon=PROPAGATE_EPSILON, method=RWR_PROPAGATION,
-                             num_iterations=PROPAGATE_ITERATIONS, smooth=PROPAGATE_SMOTH,
+                             num_iterations=PROPAGATE_ITERATIONS, smooth=PROPAGATE_SMOOTH,
                              prior_weight_func=abs):
     gene_to_idx = dict(map(lambda e: (e[1], e[0]), enumerate(network.nodes)))
     matrix = generate_similarity_matrix(network, alpha=alpha, method=method)
@@ -95,11 +54,11 @@ def generate_feature_columns(network, experiments_dict,
         cause_v_scores = source_scores[v_indexes]
         effect_u_scores = terminal_scores[u_indexes]
         effect_v_scores = terminal_scores[v_indexes]
-        return numpy.nan_to_num((cause_u_scores * effect_v_scores) / (effect_u_scores * cause_v_scores))
+        return np.nan_to_num((cause_u_scores * effect_v_scores) / (effect_u_scores * cause_v_scores))
 
-    feature_columns = pandas.DataFrame(numpy.column_stack([generate_column(experiment) for experiment in experiments]),
+    feature_columns = pandas.DataFrame(np.column_stack([generate_column(experiment) for experiment in experiments]),
                                        index=list(zip(u_nodes, v_nodes)), columns=list(experiments_dict.keys()))
-    reverse_columns = (1 / feature_columns).replace(numpy.inf, numpy.nan).fillna(0)
+    reverse_columns = (1 / feature_columns).replace(np.inf, np.nan).fillna(0)
     return feature_columns, reverse_columns
 
 
@@ -112,34 +71,34 @@ def score_network(feature_columns, reverse_columns, directed_interactions, class
     training_columns = pandas.concat([feature_columns.loc[true_in_feature, :], feature_columns.loc[false_in_feature, :],
                                       reverse_columns.loc[false_in_feature, :], reverse_columns.loc[true_in_feature, :]])
 
-    true_feature_labels = numpy.ones(len(true_in_feature))
-    false_feature_labels = numpy.zeros(len(false_in_feature))
-    true_reverse_labels = numpy.ones(len(false_in_feature))
-    false_reverse_labels = numpy.zeros(len(true_in_feature))
+    true_feature_labels = np.ones(len(true_in_feature))
+    false_feature_labels = np.zeros(len(false_in_feature))
+    true_reverse_labels = np.ones(len(false_in_feature))
+    false_reverse_labels = np.zeros(len(true_in_feature))
 
-    feature_labels = numpy.append(true_feature_labels, false_feature_labels)
-    reverse_labels = numpy.append(true_reverse_labels, false_reverse_labels)
-    training_scores = numpy.append(feature_labels, reverse_labels)
+    feature_labels = np.append(true_feature_labels, false_feature_labels)
+    reverse_labels = np.append(true_reverse_labels, false_reverse_labels)
+    training_scores = np.append(feature_labels, reverse_labels)
 
     fitted_classifier = classifier.fit(training_columns, training_scores)
 
     unclassified_feature_scores = fitted_classifier.predict_proba(feature_columns.drop(training_columns.index))[:, 1]
     unclassified_reverse_scores = fitted_classifier.predict_proba(reverse_columns.drop(training_columns.index))[:, 1]
 
-    feature_scores = numpy.concatenate((true_feature_labels, false_feature_labels, unclassified_feature_scores))
-    reverse_scores = numpy.concatenate((true_reverse_labels, false_reverse_labels, unclassified_reverse_scores))
+    feature_scores = np.concatenate((true_feature_labels, false_feature_labels, unclassified_feature_scores))
+    reverse_scores = np.concatenate((true_reverse_labels, false_reverse_labels, unclassified_reverse_scores))
 
-    feature_index = numpy.concatenate((list(true_in_feature), list(false_in_feature),
+    feature_index = np.concatenate((list(true_in_feature), list(false_in_feature),
                                        list(feature_columns.index.difference(training_columns.index))))
     feature_data_frame = pandas.DataFrame(feature_scores, index=feature_index, columns=["score"]).sort_index()
 
-    reverse_index = numpy.concatenate((list(false_in_feature), list(true_in_feature),
+    reverse_index = np.concatenate((list(false_in_feature), list(true_in_feature),
                                        list(reverse_columns.index.difference(training_columns.index))))
     reverse_data_frame = pandas.DataFrame(reverse_scores, index=reverse_index, columns=["score"]).sort_index()
 
     assert feature_data_frame.index.equals(reverse_data_frame.index)
 
-    return pandas.DataFrame(numpy.column_stack([feature_data_frame["score"].values, reverse_data_frame["score"].values]),
+    return pandas.DataFrame(np.column_stack([feature_data_frame["score"].values, reverse_data_frame["score"].values]),
                             index=feature_data_frame.index,
                             columns=["(u,v)", "(v,u)"])
 
@@ -177,20 +136,20 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions, cl
                                       reverse_columns.loc[false_in_feature, :],
                                       reverse_columns.loc[true_in_feature, :]])
 
-    true_feature_labels = numpy.ones(len(true_in_feature))
-    false_feature_labels = numpy.zeros(len(false_in_feature))
-    true_reverse_labels = numpy.ones(len(false_in_feature))
-    false_reverse_labels = numpy.zeros(len(true_in_feature))
+    true_feature_labels = np.ones(len(true_in_feature))
+    false_feature_labels = np.zeros(len(false_in_feature))
+    true_reverse_labels = np.ones(len(false_in_feature))
+    false_reverse_labels = np.zeros(len(true_in_feature))
 
-    feature_labels = numpy.append(true_feature_labels, false_feature_labels)
-    reverse_labels = numpy.append(true_reverse_labels, false_reverse_labels)
-    training_scores = numpy.append(feature_labels, reverse_labels)
+    feature_labels = np.append(true_feature_labels, false_feature_labels)
+    reverse_labels = np.append(true_reverse_labels, false_reverse_labels)
+    training_scores = np.append(feature_labels, reverse_labels)
 
     cv = StratifiedKFold(n_splits=10)
 
     tprs = []
     aucs = []
-    mean_fpr = numpy.linspace(0, 1, 100)
+    mean_fpr = np.linspace(0, 1, 100)
 
     fig, ax = plt.subplots()
     for i, (train, test) in enumerate(cv.split(training_columns, training_scores)):
@@ -198,7 +157,7 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions, cl
         viz = plot_roc_curve(classifier, training_columns.iloc[test], training_scores[test],
                              name='ROC fold {}'.format(i),
                              alpha=0.3, lw=1, ax=ax)
-        interp_tpr = numpy.interp(mean_fpr, viz.fpr, viz.tpr)
+        interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
         aucs.append(viz.roc_auc)
@@ -206,17 +165,17 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions, cl
     ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
             label='Chance', alpha=.8)
 
-    mean_tpr = numpy.mean(tprs, axis=0)
+    mean_tpr = np.mean(tprs, axis=0)
     mean_tpr[-1] = 1.0
     mean_auc = auc(mean_fpr, mean_tpr)
-    std_auc = numpy.std(aucs)
+    std_auc = np.std(aucs)
     ax.plot(mean_fpr, mean_tpr, color='b',
             label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
             lw=2, alpha=.8)
 
-    std_tpr = numpy.std(tprs, axis=0)
-    tprs_upper = numpy.minimum(mean_tpr + std_tpr, 1)
-    tprs_lower = numpy.maximum(mean_tpr - std_tpr, 0)
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
     ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
                     label=r'$\pm$ 1 std. dev.')
 
