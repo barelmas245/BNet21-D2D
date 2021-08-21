@@ -1,4 +1,3 @@
-import os
 import math
 import numpy
 import pandas
@@ -24,7 +23,7 @@ def read_data():
     return network, directed_interactions, gene_expressions
 
 
-def generate_similarity_matrix(graph, alpha=PROPAGATE_ALPHA, method=RWR_PROPAGATION):
+def generate_similarity_matrix(graph, alpha, method):
     if method == RWR_PROPAGATION:
         matrix = nx.to_scipy_sparse_matrix(graph, graph.nodes)
         norm_matrix = sparse.diags(1 / numpy.sqrt(matrix.sum(0).A1))
@@ -33,47 +32,47 @@ def generate_similarity_matrix(graph, alpha=PROPAGATE_ALPHA, method=RWR_PROPAGAT
     if method == KERNEL_PROPAGATION:
         matrix = nx.normalized_laplacian_matrix(graph)
         return alpha * matrix
+    else:
+        raise ValueError("Unsupported propagation method")
 
 
 def propagate(seeds_dict, matrix, gene_to_index,
-              alpha=PROPAGATE_ALPHA, epsilon=PROPAGATE_EPSILON,
-              num_iterations=PROPAGATE_ITERATIONS, method=RWR_PROPAGATION):
+              alpha, epsilon, method,
+              num_iterations=PROPAGATE_ITERATIONS, smooth=PROPAGATE_SMOTH, prior_weight_func=abs):
     num_genes = matrix.shape[0]
     curr_scores = numpy.zeros(num_genes)
 
-    # Set the scores seeds
+    # Set the prior scores
     for gene in seeds_dict:
-        if gene in gene_to_index:
-            # We do not differ between over/under expression
-            curr_scores[gene_to_index[gene]] = abs(seeds_dict[gene])
-        else:
-            print(f"Not found gene {gene} in network!")
-            raise RuntimeError()
-    # Normalize the prior seeds
+        assert gene in gene_to_index, f"Not found gene {gene} in network!"
+        curr_scores[gene_to_index[gene]] = prior_weight_func(seeds_dict[gene])
+    # Normalize the prior scores
     curr_scores = curr_scores / sum(curr_scores)
 
-    prior_vec = (1 - alpha) * curr_scores
+    if method == RWR_PROPAGATION:
+        prior_vec = (1 - alpha) * curr_scores
+        for _ in range(num_iterations):
+            new_scores = curr_scores.copy()
+            curr_scores = matrix.dot(new_scores) + prior_vec
 
-    for _ in range(num_iterations):
-        new_scores = curr_scores.copy()
-        curr_scores = matrix.dot(new_scores) + prior_vec
+            if math.sqrt(scipy.linalg.norm(new_scores - curr_scores)) < epsilon:
+                break
+        return curr_scores
+    if method == KERNEL_PROPAGATION:
+        from scipy.sparse.linalg import expm_multiply
+        return expm_multiply(-matrix, curr_scores, start=0, stop=smooth, endpoint=True)[-1]
+    else:
+        raise ValueError("Unsupported propagation method")
 
-        if math.sqrt(scipy.linalg.norm(new_scores - curr_scores)) < epsilon:
-            break
 
-    return curr_scores
-
-
-def generate_propagation_data(network):
-    matrix = generate_similarity_matrix(network)
+def generate_feature_columns(network, experiments_dict,
+                             alpha=PROPAGATE_ALPHA, epsilon=PROPAGATE_EPSILON, method=RWR_PROPAGATION,
+                             num_iterations=PROPAGATE_ITERATIONS, smooth=PROPAGATE_SMOTH,
+                             prior_weight_func=abs):
     gene_to_idx = dict(map(lambda e: (e[1], e[0]), enumerate(network.nodes)))
-    return gene_to_idx, matrix
+    matrix = generate_similarity_matrix(network, alpha=alpha, method=method)
 
-
-def generate_feature_columns(network, experiments_dict):
-    gene_to_idx, matrix = generate_propagation_data(network)
-
-    # All edges in the graph
+    # All edges endpoints in the graph
     u_nodes = list(map(lambda e: e[0], network.edges))
     v_nodes = list(map(lambda e: e[1], network.edges))
     u_indexes = list(map(lambda node: gene_to_idx[node], u_nodes))
@@ -85,14 +84,17 @@ def generate_feature_columns(network, experiments_dict):
         terminals_dict = experiments_dict[experiment]
 
         print(f"Running propagation of knockout {experiment}")
-        source_scores = propagate(sources_dict, matrix, gene_to_idx)
-        terminal_scores = propagate(terminals_dict, matrix, gene_to_idx)
+        source_scores = propagate(sources_dict, matrix, gene_to_idx, alpha=alpha, epsilon=epsilon,
+                                  method=method, num_iterations=num_iterations, smooth=smooth,
+                                  prior_weight_func=prior_weight_func)
+        terminal_scores = propagate(terminals_dict, matrix, gene_to_idx, alpha=alpha, epsilon=epsilon,
+                                    method=method, num_iterations=num_iterations, smooth=smooth,
+                                    prior_weight_func=prior_weight_func)
 
         cause_u_scores = source_scores[u_indexes]
         cause_v_scores = source_scores[v_indexes]
         effect_u_scores = terminal_scores[u_indexes]
         effect_v_scores = terminal_scores[v_indexes]
-
         return numpy.nan_to_num((cause_u_scores * effect_v_scores) / (effect_u_scores * cause_v_scores))
 
     feature_columns = pandas.DataFrame(numpy.column_stack([generate_column(experiment) for experiment in experiments]),
@@ -234,7 +236,10 @@ if __name__ == '__main__':
         feature_columns = pandas.read_pickle(FEATURE_COLS_PATH)
         reverse_columns = pandas.read_pickle(REVERSE_COLS_PATH)
     else:
-        feature_columns, reverse_columns = generate_feature_columns(network, experiments)
+        feature_columns, reverse_columns = generate_feature_columns(network, experiments,
+                                                                    alpha=PROPAGATE_ALPHA,
+                                                                    epsilon=PROPAGATE_EPSILON,
+                                                                    method=RWR_PROPAGATION)
         feature_columns.to_pickle(FEATURE_COLS_PATH)
         reverse_columns.to_pickle(REVERSE_COLS_PATH)
 
