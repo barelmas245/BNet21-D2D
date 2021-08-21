@@ -236,10 +236,10 @@ if __name__ == '__main__':
         feature_columns = pandas.read_pickle(FEATURE_COLS_PATH)
         reverse_columns = pandas.read_pickle(REVERSE_COLS_PATH)
     else:
-        feature_columns, reverse_columns = generate_feature_columns(network, experiments,
-                                                                    alpha=PROPAGATE_ALPHA,
-                                                                    epsilon=PROPAGATE_EPSILON,
-                                                                    method=RWR_PROPAGATION)
+        feature_columns, reverse_columns = \
+            generate_feature_columns(network, experiments, alpha=PROPAGATE_ALPHA, epsilon=PROPAGATE_EPSILON,
+                                     method=RWR_PROPAGATION, num_iterations=PROPAGATE_ITERATIONS,
+                                     prior_weight_func=abs)
         feature_columns.to_pickle(FEATURE_COLS_PATH)
         reverse_columns.to_pickle(REVERSE_COLS_PATH)
 
