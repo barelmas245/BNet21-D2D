@@ -2,10 +2,8 @@ import os
 import numpy as np
 import networkx as nx
 
-from biogrid.conf import BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES, ONLY_PHYSICAL
-
-YEAST_BIOGRID_TXT_PATH = r'C:\git\BNet21-D2D\sources\BIOGRID-ORGANISM-Saccharomyces_cerevisiae_S288c-4.4.199.tab3.txt'
-BIOGRID_NET_PATH = r'C:\git\BNet21-D2D\sources\generated\biogrid_net.gpickle'
+from preprocessing.biogrid.conf import BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES, ONLY_PHYSICAL
+from preprocessing.consts import RAW_YEAST_BIOGRID_PATH, GENERATED_YEAST_BIOGRID_NET_PATH
 
 
 class BioGridInteractorData(object):
@@ -93,14 +91,14 @@ def calculate_interaction_score(interaction_experiments):
         lambda exp: 1 - BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES[exp], list(set(interaction_experiments)))))
 
 
-def read_biogrod_data(path=YEAST_BIOGRID_TXT_PATH, only_physical=ONLY_PHYSICAL):
+def read_biogrod_data(path=RAW_YEAST_BIOGRID_PATH, only_physical=ONLY_PHYSICAL):
     with open(path, 'r') as f:
         data = f.readlines()
     all_interactions = list(map(lambda entry_line: BioGridEntryData(entry_line.replace('\n', '')), data[1:]))
     return list(filter(lambda entry: entry.exp_system_type == 'physical', all_interactions)) if only_physical else all_interactions
 
 
-def get_biogrid_network(src_path=YEAST_BIOGRID_TXT_PATH, dst_path=BIOGRID_NET_PATH, force=False):
+def get_biogrid_network(src_path=RAW_YEAST_BIOGRID_PATH, dst_path=GENERATED_YEAST_BIOGRID_NET_PATH, force=False):
     if os.path.isfile(dst_path) and not force:
         return nx.read_gpickle(dst_path)
     else:

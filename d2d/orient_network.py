@@ -10,20 +10,11 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import plot_roc_curve, auc
 import matplotlib.pyplot as plt
 
-from biogrid.read_biogrid import get_biogrid_network
-from breikreutz.experiments import get_gene_expressions_data
-from breikreutz.annotations import get_true_annotations
+from preprocessing.biogrid.read_biogrid import get_biogrid_network
+from preprocessing.breikreutz.experiments import get_gene_expressions_data
+from preprocessing.breikreutz.annotations import get_true_annotations
 
-PROPAGATE_ALPHA = 0.6
-PROPAGATE_EPSILON = 1e-5
-PROPAGATE_ITERATIONS = 100
-
-ORIENTATION_EPSILON = 0.01
-
-ANNOTATED_NETWORK_PATH = r'C:\git\BNet21-D2D\results\annotated_network.gpickle'
-FEATURE_COLS_PATH = r'C:\git\BNet21-D2D\results\features_cols.pickle'
-REVERSE_COLS_PATH = r'C:\git\BNet21-D2D\results\reverse_cols.pickle'
-CROSS_VALIDATION_ROC_PATH = r'C:\git\BNet21-D2D\results\cross_validation_roc.png'
+from consts import *
 
 
 def read_data():
