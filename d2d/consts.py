@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 ORIENTATION_EPSILON = 0.01
