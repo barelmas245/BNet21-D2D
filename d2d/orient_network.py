@@ -20,25 +20,24 @@ from consts import *
 def read_data():
     network = get_biogrid_network()
     gene_expressions = get_gene_expressions_data()
-
     directed_interactions = get_true_annotations()
-
     return network, directed_interactions, gene_expressions
 
 
-def generate_similarity_matrix(graph):
-    # TODO: check what happens when using the kernel propagation
-    # matrix = nx.normalized_laplacian_matrix(graph)
+def generate_similarity_matrix(graph, alpha=PROPAGATE_ALPHA, method=RWR_PROPAGATION):
+    if method == RWR_PROPAGATION:
+        matrix = nx.to_scipy_sparse_matrix(graph, graph.nodes)
+        norm_matrix = sparse.diags(1 / numpy.sqrt(matrix.sum(0).A1))
+        matrix = norm_matrix * matrix * norm_matrix
+        return alpha * matrix
+    if method == KERNEL_PROPAGATION:
+        matrix = nx.normalized_laplacian_matrix(graph)
+        return alpha * matrix
 
-    matrix = nx.to_scipy_sparse_matrix(graph, graph.nodes)
 
-    norm_matrix = sparse.diags(1 / numpy.sqrt(matrix.sum(0).A1))
-    matrix = norm_matrix * matrix * norm_matrix
-
-    return PROPAGATE_ALPHA * matrix
-
-
-def propagate(seeds_dict, matrix, gene_to_index):
+def propagate(seeds_dict, matrix, gene_to_index,
+              alpha=PROPAGATE_ALPHA, epsilon=PROPAGATE_EPSILON,
+              num_iterations=PROPAGATE_ITERATIONS, method=RWR_PROPAGATION):
     num_genes = matrix.shape[0]
     curr_scores = numpy.zeros(num_genes)
 
@@ -53,13 +52,13 @@ def propagate(seeds_dict, matrix, gene_to_index):
     # Normalize the prior seeds
     curr_scores = curr_scores / sum(curr_scores)
 
-    prior_vec = (1 - PROPAGATE_ALPHA) * curr_scores
+    prior_vec = (1 - alpha) * curr_scores
 
-    for _ in range(PROPAGATE_ITERATIONS):
+    for _ in range(num_iterations):
         new_scores = curr_scores.copy()
         curr_scores = matrix.dot(new_scores) + prior_vec
 
-        if math.sqrt(scipy.linalg.norm(new_scores - curr_scores)) < PROPAGATE_EPSILON:
+        if math.sqrt(scipy.linalg.norm(new_scores - curr_scores)) < epsilon:
             break
 
     return curr_scores
