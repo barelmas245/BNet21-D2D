@@ -111,10 +111,7 @@ def score_network(feature_columns, reverse_columns, directed_interactions, class
                             columns=["(u,v)", "(v,u)"])
 
 
-def orient_network(network, scores, orientation_epsilon=ORIENTATION_EPSILON):
-    edges = network.edges
-    assert set(edges) == set(scores.index)
-
+def orient_edges(scores, orientation_epsilon=ORIENTATION_EPSILON):
     potential_oriented_edges = scores[scores['(u,v)'] >= scores['(v,u)']].index
     potential_inverted_edges = scores[scores['(u,v)'] < scores['(v,u)']].index
 

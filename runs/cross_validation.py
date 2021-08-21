@@ -1,65 +1,57 @@
 import pandas
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.metrics import plot_roc_curve, auc
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 
-from d2d.d2d import read_data, get_training_features_and_scores
+from d2d.d2d import read_data, get_training_features_and_scores, score_network, orient_edges, ORIENTATION_EPSILON
 from runs.features import get_features
-from runs.consts import FEATURE_COLS_PATH, REVERSE_COLS_PATH, CROSS_VALIDATION_ROC_PATH
+from runs.consts import FEATURE_COLS_PATH, REVERSE_COLS_PATH
 
 
 def cross_validation(feature_columns, reverse_columns, directed_interactions, classifier):
-    training_feature_columns, training_reverse_columns, training_feature_scores, training_reverse_scores = \
+    directed_feature_columns, directed_reverse_columns, directed_feature_scores, directed_reverse_scores = \
         get_training_features_and_scores(feature_columns, reverse_columns, directed_interactions)
 
-    training_columns = pandas.concat([training_feature_columns, training_reverse_columns])
-    training_scores = np.append(training_feature_scores, training_reverse_scores)
+    cv = StratifiedKFold(n_splits=12)
+    tps = []
+    falses = []
+    unannotated = []
 
-    cv = StratifiedKFold(n_splits=10)
+    import random
+    random.shuffle(directed_interactions)
+    directed_interactions_columns = pandas.DataFrame(index=directed_interactions)
+    for i, (train, test) in enumerate(cv.split(directed_interactions, np.ones(len(directed_interactions)))):
+        print(f"######### Test {i}")
+        training_directed_interactions = list(directed_interactions_columns.iloc[train].index)
+        test_directed_interactions = list(directed_interactions_columns.iloc[test].index)
 
-    tprs = []
-    aucs = []
-    mean_fpr = np.linspace(0, 1, 100)
+        classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
+        scores = score_network(directed_feature_columns, directed_reverse_columns,
+                               training_directed_interactions, classifier)
+        annotated_network, annotated_edges = orient_edges(scores, orientation_epsilon=ORIENTATION_EPSILON)
 
-    fig, ax = plt.subplots()
-    for i, (train, test) in enumerate(cv.split(training_columns, training_scores)):
-        classifier.fit(training_columns.iloc[train], training_scores[train])
-        viz = plot_roc_curve(classifier, training_columns.iloc[test], training_scores[test],
-                             name='ROC fold {}'.format(i),
-                             alpha=0.3, lw=1, ax=ax)
-        interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
-        interp_tpr[0] = 0.0
-        tprs.append(interp_tpr)
-        aucs.append(viz.roc_auc)
+        assert set(annotated_edges).intersection(training_directed_interactions) == set(training_directed_interactions)
+        new_annotated_edges = set(annotated_edges).difference(training_directed_interactions)
+        true_positive = new_annotated_edges.intersection(test_directed_interactions)
+        false_annotations = new_annotated_edges.difference(test_directed_interactions)
+        unannotated_num = len(directed_interactions) - len(annotated_edges)
+        print(f"TP: {len(true_positive)} out of {len(test_directed_interactions)}")
+        print(f"false annotations: {len(false_annotations)} out of {len(test_directed_interactions)}")
+        print(f"Not annotated: {unannotated_num} out of {len(test_directed_interactions)}")
+        tps.append(len(true_positive) / len(test_directed_interactions))
+        falses.append(len(false_annotations) / len(test_directed_interactions))
+        unannotated.append(unannotated_num / len(test_directed_interactions))
 
-    ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-            label='Chance', alpha=.8)
-
-    mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0
-    mean_auc = auc(mean_fpr, mean_tpr)
-    std_auc = np.std(aucs)
-    ax.plot(mean_fpr, mean_tpr, color='b',
-            label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
-            lw=2, alpha=.8)
-
-    std_tpr = np.std(tprs, axis=0)
-    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-    ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-                    label=r'$\pm$ 1 std. dev.')
-
-    ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-           title="ROC curve")
-    ax.legend(loc="lower right")
-    plt.savefig(CROSS_VALIDATION_ROC_PATH)
+    print("################ Results")
+    print(f"mean true positives: {np.mean(tps)}")
+    print(f"mean false annotations: {np.mean(falses)}")
+    print(f"mean unannotated: {np.mean(unannotated)}")
 
 
 if __name__ == '__main__':
     network, true_annotations, experiments = read_data()
     feature_cols, reverse_cols = get_features(network, experiments,
-                                              FEATURE_COLS_PATH, REVERSE_COLS_PATH)
+                                              FEATURE_COLS_PATH, REVERSE_COLS_PATH,
+                                              force=True)
     logistic_regression_classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
     cross_validation(feature_cols, reverse_cols, true_annotations, logistic_regression_classifier)
