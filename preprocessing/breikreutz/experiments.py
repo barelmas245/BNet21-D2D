@@ -7,7 +7,8 @@ from preprocessing.biogrid.read_biogrid import get_biogrid_network
 from preprocessing.consts import RAW_BREITKREUTZ_EXPRESSIONS_DATA_PATH, GENERATED_BREITKREUTZ_EXPRESSIONS_PATH
 
 
-def get_gene_expressions_data(src_path=RAW_BREITKREUTZ_EXPRESSIONS_DATA_PATH, dst_path=GENERATED_BREITKREUTZ_EXPRESSIONS_PATH,
+def get_gene_expressions_data(src_path=RAW_BREITKREUTZ_EXPRESSIONS_DATA_PATH,
+                              dst_path=GENERATED_BREITKREUTZ_EXPRESSIONS_PATH,
                               filter_by_biogrid_net=True, force=False):
     if os.path.isfile(dst_path) and not force:
         with open(dst_path, 'r') as f:

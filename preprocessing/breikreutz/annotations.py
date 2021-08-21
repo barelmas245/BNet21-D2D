@@ -5,7 +5,8 @@ from preprocessing.biogrid.read_biogrid import get_biogrid_network
 from preprocessing.consts import RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH, GENERATED_BREITKREUTZ_ANNOTATIONS_PATH
 
 
-def get_true_annotations(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH, dst_path=GENERATED_BREITKREUTZ_ANNOTATIONS_PATH,
+def get_true_annotations(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH,
+                         dst_path=GENERATED_BREITKREUTZ_ANNOTATIONS_PATH,
                          filter_by_biogrid_net=True, force=False):
     if os.path.isfile(dst_path) and not force:
         with open(dst_path, 'r') as f:

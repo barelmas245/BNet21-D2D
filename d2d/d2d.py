@@ -51,8 +51,9 @@ def generate_feature_columns(network, experiments_dict,
         effect_v_scores = terminal_scores[v_indexes]
         return np.nan_to_num((cause_u_scores * effect_v_scores) / (effect_u_scores * cause_v_scores))
 
-    feature_columns = pandas.DataFrame(np.column_stack([generate_column(experiment) for experiment in experiments_dict]),
-                                       index=list(zip(u_nodes, v_nodes)), columns=list(experiments_dict.keys()))
+    feature_columns = pandas.DataFrame(np.column_stack([
+        generate_column(experiment) for experiment in experiments_dict]),
+        index=list(zip(u_nodes, v_nodes)), columns=list(experiments_dict.keys()))
     reverse_columns = (1 / feature_columns).replace(np.inf, np.nan).fillna(0)
     return feature_columns, reverse_columns
 
@@ -84,11 +85,11 @@ def score_network(feature_columns, reverse_columns, directed_interactions, class
     reverse_scores = np.concatenate((true_reverse_labels, false_reverse_labels, unclassified_reverse_scores))
 
     feature_index = np.concatenate((list(true_in_feature), list(false_in_feature),
-                                       list(feature_columns.index.difference(training_columns.index))))
+                                    list(feature_columns.index.difference(training_columns.index))))
     feature_data_frame = pandas.DataFrame(feature_scores, index=feature_index, columns=["score"]).sort_index()
 
     reverse_index = np.concatenate((list(false_in_feature), list(true_in_feature),
-                                       list(reverse_columns.index.difference(training_columns.index))))
+                                    list(reverse_columns.index.difference(training_columns.index))))
     reverse_data_frame = pandas.DataFrame(reverse_scores, index=reverse_index, columns=["score"]).sort_index()
 
     assert feature_data_frame.index.equals(reverse_data_frame.index)
