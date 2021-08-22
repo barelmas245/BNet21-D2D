@@ -42,10 +42,10 @@ def propagate(seeds_dict, matrix, gene_to_index,
     if method == RWR_PROPAGATION:
         prior_vec = (1 - alpha) * curr_scores
         for _ in range(num_iterations):
-            new_scores = curr_scores.copy()
-            curr_scores = matrix.dot(new_scores) + prior_vec
+            prev_scores = curr_scores.copy()
+            curr_scores = matrix.dot(prev_scores) + prior_vec
 
-            if math.sqrt(norm(new_scores - curr_scores)) < epsilon:
+            if math.sqrt(norm(curr_scores - prev_scores)) < epsilon:
                 break
         return curr_scores
     if method == KERNEL_PROPAGATION:

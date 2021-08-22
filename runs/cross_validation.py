@@ -8,7 +8,7 @@ from runs.features import get_features
 from runs.consts import FEATURE_COLS_PATH, REVERSE_COLS_PATH
 
 
-def cross_validation(feature_columns, reverse_columns, directed_interactions, classifier):
+def cross_validation(feature_columns, reverse_columns, directed_interactions):
     directed_feature_columns, directed_reverse_columns, directed_feature_scores, directed_reverse_scores = \
         get_training_features_and_scores(feature_columns, reverse_columns, directed_interactions)
 
@@ -51,7 +51,5 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions, cl
 if __name__ == '__main__':
     network, true_annotations, experiments = read_data()
     feature_cols, reverse_cols = get_features(network, experiments,
-                                              FEATURE_COLS_PATH, REVERSE_COLS_PATH,
-                                              force=True)
-    logistic_regression_classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
-    cross_validation(feature_cols, reverse_cols, true_annotations, logistic_regression_classifier)
+                                              FEATURE_COLS_PATH, REVERSE_COLS_PATH, force=True)
+    cross_validation(feature_cols, reverse_cols, true_annotations)
