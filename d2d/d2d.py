@@ -17,9 +17,6 @@ from d2d.propagation import generate_similarity_matrix, propagate, \
 ORIENTATION_EPSILON = 0.01
 
 
-
-
-
 def generate_feature_columns(network, experiments_dict,
                              alpha=PROPAGATE_ALPHA, epsilon=PROPAGATE_EPSILON, method=RWR_PROPAGATION,
                              num_iterations=PROPAGATE_ITERATIONS, smooth=PROPAGATE_SMOOTH,
