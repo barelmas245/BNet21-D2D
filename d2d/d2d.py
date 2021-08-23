@@ -42,8 +42,8 @@ def generate_feature_columns(network, experiments_dict,
     v_indexes = list(map(lambda node: gene_to_idx[node], v_nodes))
 
     def generate_column(experiment):
-        # We always have only single source and multiple targets
-        sources_dict = {experiment: 1}
+        all_sources = experiment.split(',')
+        sources_dict = dict(map(lambda source: (source, 1), all_sources))
         terminals_dict = experiments_dict[experiment]
 
         print(f"Running propagation of knockout {experiment}")
