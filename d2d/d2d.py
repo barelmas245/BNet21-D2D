@@ -1,3 +1,4 @@
+import copy
 import pandas
 import numpy as np
 import networkx as nx
@@ -108,12 +109,12 @@ def score_network(feature_columns, reverse_columns, directed_interactions, class
     feature_scores = np.concatenate((training_feature_scores, unclassified_feature_scores))
     reverse_scores = np.concatenate((training_reverse_scores, unclassified_reverse_scores))
 
-    feature_index = np.concatenate((list(training_feature_columns.index),
-                                    list(feature_columns.index.difference(training_columns.index))))
+    feature_index = copy.copy(list(training_feature_columns.index))
+    feature_index.extend(list(feature_columns.index.difference(training_columns.index)))
     feature_data_frame = pandas.DataFrame(feature_scores, index=feature_index, columns=["score"]).sort_index()
 
-    reverse_index = np.concatenate((list(training_reverse_columns.index),
-                                    list(reverse_columns.index.difference(training_columns.index))))
+    reverse_index = copy.copy(list(training_reverse_columns.index))
+    reverse_index.extend(list(reverse_columns.index.difference(training_columns.index)))
     reverse_data_frame = pandas.DataFrame(reverse_scores, index=reverse_index, columns=["score"])
     opposite_edges = list(map(lambda e: (e[1], e[0]), list(feature_data_frame.index)))
     reverse_data_frame = reverse_data_frame.reindex(opposite_edges)
