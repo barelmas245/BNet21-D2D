@@ -1,6 +1,6 @@
 from preprocessing.yeast.biogrid.read_biogrid import get_biogrid_network
-from preprocessing.yeast.breikreutz.experiments import get_gene_expressions_data
-from preprocessing.yeast.breikreutz.annotations import get_true_annotations
+from preprocessing.yeast.experiments import get_gene_expressions_data
+from preprocessing.yeast.annotations import get_true_annotations
 
 
 def read_data():

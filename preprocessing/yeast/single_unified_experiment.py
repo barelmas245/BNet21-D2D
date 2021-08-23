@@ -4,11 +4,54 @@ import json
 import os
 
 from preprocessing.yeast.biogrid.read_biogrid import get_biogrid_network
-from preprocessing.yeast.consts import RAW_BREITKREUTZ_EXPRESSIONS_DATA_PATH, GENERATED_BREITKREUTZ_EXPRESSIONS_PATH
+from preprocessing.yeast.consts import RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH, GENERATED_HOLSTEGE_EXPRESSIONS_PATH
+
+SOURCES = [
+    'SLN1',
+    'YCK1',
+    'YCK2',
+    'SHO1',
+    'MF(ALPHA)2',
+    'MID2',
+    'RAS2',
+    'GPR1',
+    'BCY1',
+    'STE50',
+    'MSB2',
+    'SIN3',
+    'RGA1',
+    'RGA2',
+    'ARR4'
+]
+
+TARGETS = [
+    'CDC42',
+    'HOG1',
+    'STE7',
+    'STE20',
+    'DIG2',
+    'DIG1',
+    'PBS2',
+    'FUS3',
+    'STE5',
+    'GPA1',
+    'FKS2',
+    'FUS1',
+    'STE12',
+    'SWI4'
+]
+
+TARGETS_BAREL = [
+    'FUS1',
+    'FAR1',
+    'GPD1',
+    'CTT1',
+    'GRE2'
+]
 
 
-def get_gene_expressions_data(src_path=RAW_BREITKREUTZ_EXPRESSIONS_DATA_PATH,
-                              dst_path=GENERATED_BREITKREUTZ_EXPRESSIONS_PATH,
+def get_gene_expressions_data(src_path=RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH,
+                              dst_path=GENERATED_HOLSTEGE_EXPRESSIONS_PATH,
                               filter_by_biogrid_net=True, force=False):
     if os.path.isfile(dst_path) and not force:
         with open(dst_path, 'r') as f:
@@ -25,6 +68,8 @@ def get_gene_expressions_data(src_path=RAW_BREITKREUTZ_EXPRESSIONS_DATA_PATH,
         experiments_dict = dict()
         all_sources = raw_data.columns
         all_targets = raw_data.index
+
+        final_targets = {}
         for src_gene in raw_data:
             if (filter_by_biogrid_net and src_gene not in biogrid_genes) or src_gene in all_targets:
                 continue
@@ -38,8 +83,21 @@ def get_gene_expressions_data(src_path=RAW_BREITKREUTZ_EXPRESSIONS_DATA_PATH,
             if targets_dict != {}:
                 experiments_dict[src_gene] = targets_dict
 
-        with open(dst_path, 'w') as f:
-            json.dump(experiments_dict, f, indent=2)
+                for target in targets_dict:
+                    if target in final_targets:
+                        final_targets[target].append(targets_dict[target])
+                    else:
+                        final_targets[target] = [targets_dict[target]]
+
+        final_sources = list(experiments_dict.keys())
+        with open(r'C:\git\BNet21-D2D\results\single_unified_experiment\sources.txt', 'w') as f:
+            lines = list(map(lambda source: 'KEGG\t' + source + '\n', final_sources))
+            f.writelines(lines)
+
+        with open(r'C:\git\BNet21-D2D\results\single_unified_experiment\targets.txt', 'w') as f:
+            lines = list(map(lambda target: 'KEGG\t' + target + '\t' + str(np.mean(final_targets[target])) + '\n',
+                             final_targets))
+            f.writelines(lines)
 
         return experiments_dict
 

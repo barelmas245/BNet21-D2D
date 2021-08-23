@@ -1,5 +1,5 @@
 from preprocessing.yeast.biogrid.read_biogrid import get_biogrid_network
-from preprocessing.yeast.breikreutz.annotations import get_true_annotations
+from preprocessing.yeast.annotations import get_true_annotations
 
 if __name__ == '__main__':
     net = get_biogrid_network()
