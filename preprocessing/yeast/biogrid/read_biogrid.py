@@ -2,8 +2,8 @@ import os
 import numpy as np
 import networkx as nx
 
-from preprocessing.biogrid.conf import BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES, ONLY_PHYSICAL
-from preprocessing.consts import RAW_YEAST_BIOGRID_PATH, GENERATED_YEAST_BIOGRID_NET_PATH
+from preprocessing.yeast.biogrid.conf import BIOGRID_EXPERIMENT_TYPES_CONFIDENCE_SCORES, ONLY_PHYSICAL
+from preprocessing.yeast.consts import RAW_YEAST_BIOGRID_PATH, GENERATED_YEAST_BIOGRID_NET_PATH
 
 
 class BioGridInteractorData(object):

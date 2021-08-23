@@ -5,9 +5,10 @@ from sklearn.metrics import plot_roc_curve, auc
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 
-from d2d.d2d import read_data, get_training_features_and_scores
+from d2d.d2d import get_training_features_and_scores
+from runs.yeast.data import read_data
 from runs.features import get_features
-from runs.consts import FEATURE_COLS_PATH, REVERSE_COLS_PATH, CROSS_VALIDATION_ROC_PATH
+from runs.yeast.consts import YEAST_RESULTS_DIR, CROSS_VALIDATION_ROC_PATH
 
 
 def cross_validation(feature_columns, reverse_columns, directed_interactions, classifier):
@@ -60,6 +61,6 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions, cl
 if __name__ == '__main__':
     network, true_annotations, experiments = read_data()
     feature_cols, reverse_cols = get_features(network, experiments,
-                                              FEATURE_COLS_PATH, REVERSE_COLS_PATH)
+                                              output_directory=YEAST_RESULTS_DIR, force=False, save=True)
     logistic_regression_classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
     cross_validation(feature_cols, reverse_cols, true_annotations, logistic_regression_classifier)

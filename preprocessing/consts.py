@@ -2,14 +2,3 @@ from pathlib import Path
 
 MAIN_DIR = Path(__file__).resolve().parent.parent
 SOURCES_DIR = MAIN_DIR / 'sources'
-BREITKREUTZ_SOURCES_DIR = SOURCES_DIR / 'breikreutz'
-GENERATED_SOURCES_DIR = SOURCES_DIR / 'generated'
-
-RAW_YEAST_BIOGRID_PATH = SOURCES_DIR / 'BIOGRID-ORGANISM-Saccharomyces_cerevisiae_S288c-4.4.199.tab3.txt'
-GENERATED_YEAST_BIOGRID_NET_PATH = GENERATED_SOURCES_DIR / 'biogrid_net.gpickle'
-
-RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH = BREITKREUTZ_SOURCES_DIR / 'Breitkreutz_annotations.txt'
-GENERATED_BREITKREUTZ_ANNOTATIONS_PATH = GENERATED_SOURCES_DIR / 'breitkeurtz_annotations.json'
-
-RAW_BREITKREUTZ_EXPRESSIONS_DATA_PATH = BREITKREUTZ_SOURCES_DIR / 'Breitkreutz_experiments_expressions.cdt'
-GENERATED_BREITKREUTZ_EXPRESSIONS_PATH = GENERATED_SOURCES_DIR / 'breitkeurtz_expressions.json'

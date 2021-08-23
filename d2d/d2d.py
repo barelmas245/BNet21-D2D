@@ -11,22 +11,13 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LogisticRegression
 
-
-from preprocessing.biogrid.read_biogrid import get_biogrid_network
-from preprocessing.breikreutz.experiments import get_gene_expressions_data
-from preprocessing.breikreutz.annotations import get_true_annotations
-
 from d2d.propagation import generate_similarity_matrix, propagate, \
     RWR_PROPAGATION, PROPAGATE_ALPHA, PROPAGATE_EPSILON, PROPAGATE_ITERATIONS, PROPAGATE_SMOOTH
 
 ORIENTATION_EPSILON = 0.01
 
 
-def read_data():
-    network = get_biogrid_network()
-    gene_expressions = get_gene_expressions_data()
-    directed_interactions = get_true_annotations()
-    return network, directed_interactions, gene_expressions
+
 
 
 def generate_feature_columns(network, experiments_dict,
