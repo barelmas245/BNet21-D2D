@@ -4,29 +4,40 @@ import json
 import os
 
 from preprocessing.yeast.biogrid.read_biogrid import get_biogrid_network
+from preprocessing.yeast.y2h.read_y2h_union import get_y2h_union_network
 from preprocessing.yeast.consts import RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH, GENERATED_HOLSTEGE_EXPRESSIONS_PATH
 
 
 def get_gene_expressions_data(src_path=RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH,
                               dst_path=GENERATED_HOLSTEGE_EXPRESSIONS_PATH,
-                              filter_by_biogrid_net=True, force=False):
+                              net_type='biogrid', filter_by_net=True, force=False):
+    dst_path = str(dst_path).format(net_type)
     if os.path.isfile(dst_path) and not force:
         with open(dst_path, 'r') as f:
             return json.load(f)
     else:
-        if filter_by_biogrid_net:
-            biogrid_net = get_biogrid_network()
-            biogrid_genes = biogrid_net.nodes
+        if filter_by_net:
+            if net_type == 'biogrid':
+                net = get_biogrid_network()
+                index_col = 3
+            elif net_type == 'y2h':
+                net = get_y2h_union_network()
+                index_col = 2
+            else:
+                raise ValueError("Unsupported network type")
+            genes = net.nodes
 
+        skip_rows = list(range(7))
+        skip_rows.remove(index_col)
         raw_data = pd.read_csv(
-            src_path, sep="\t", index_col=3, skiprows=[0, 1, 2, 4, 5, 6])
+            src_path, sep="\t", index_col=index_col, skiprows=skip_rows)
         raw_data.drop(raw_data.columns[:6], axis=1, inplace=True)
 
         experiments_dict = dict()
         all_sources = raw_data.columns
         all_targets = raw_data.index
         for src_gene in raw_data:
-            if (filter_by_biogrid_net and src_gene not in biogrid_genes) or src_gene in all_targets:
+            if (filter_by_net and src_gene not in genes) or src_gene in all_targets:
                 continue
             targets_dict = raw_data[src_gene].to_dict()
             # Filter out targets which has no significant expression or has negative score
@@ -34,7 +45,7 @@ def get_gene_expressions_data(src_path=RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH,
             # Filter out targets which are also in the sources
             targets_dict = {key: value for key, value in targets_dict.items() if key not in all_sources}
 
-            targets_dict = dict([(key, val) for key, val in targets_dict.items() if key in biogrid_genes]) if filter_by_biogrid_net else targets_dict
+            targets_dict = dict([(key, val) for key, val in targets_dict.items() if key in genes]) if filter_by_net else targets_dict
             if targets_dict != {}:
                 experiments_dict[src_gene] = targets_dict
 
@@ -45,4 +56,5 @@ def get_gene_expressions_data(src_path=RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH,
 
 
 if __name__ == '__main__':
-    gene_expressions = get_gene_expressions_data(force=True)
+    get_gene_expressions_data(net_type='biogrid', force=True)
+    get_gene_expressions_data(net_type='y2h', force=True)
