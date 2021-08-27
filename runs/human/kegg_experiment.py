@@ -42,14 +42,12 @@ def run_human_kegg_experiment(prior_weight_func_name='abs'):
     opposite_edges = list(map(lambda e: (e[1], e[0]), annotated_edges))
     false_annotations = set(opposite_edges).intersection(true_annotations)
 
-    new_annotated_num = len(set(annotated_edges).difference(true_annotations))
     unannotated_num = len(feature_cols.index) - len(annotated_edges)
 
     print(f"Total edges to annotate: {len(feature_cols.index)}")
     print(f"TP: {len(true_positive)} out of {len(true_annotations)}")
     print(f"false annotations: {len(false_annotations)} out of {len(true_annotations)}")
     print(f"undetermined annotated: {unannotated_num} out of {len(true_annotations)}")
-    print(f"New annotations: {new_annotated_num} out of {len(feature_cols.index) - len(true_annotations)}")
 
     with open(GENERATED_KEGG_TRUE_DIRECTION_ANNOTATIONS_PATH, 'r') as f:
         l = json.load(f)

@@ -10,6 +10,7 @@ REVERESE_FILE_NAME = 'reverse_cols.pickle'
 
 
 def get_features(network, experiments, save=True, force=False, output_directory=pathlib.Path(),
+                 edges_to_direct=None,
                  alpha=PROPAGATE_ALPHA, epsilon=PROPAGATE_EPSILON,
                  method=RWR_PROPAGATION, num_iterations=PROPAGATE_ITERATIONS,
                  prior_weight_func=abs):
@@ -22,7 +23,8 @@ def get_features(network, experiments, save=True, force=False, output_directory=
             return pandas.read_pickle(features_path), pandas.read_pickle(reverse_path)
 
     feature_columns, reverse_columns = \
-        generate_feature_columns(network, experiments, alpha=alpha, epsilon=epsilon,
+        generate_feature_columns(network, experiments, edges_to_direct=edges_to_direct,
+                                 alpha=alpha, epsilon=epsilon,
                                  method=method, num_iterations=num_iterations,
                                  prior_weight_func=prior_weight_func)
 

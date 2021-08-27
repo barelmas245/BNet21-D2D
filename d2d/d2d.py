@@ -17,7 +17,7 @@ from d2d.propagation import generate_similarity_matrix, propagate, \
 ORIENTATION_EPSILON = 0.01
 
 
-def generate_feature_columns(network, experiments_dict,
+def generate_feature_columns(network, experiments_dict, edges_to_direct=None,
                              alpha=PROPAGATE_ALPHA, epsilon=PROPAGATE_EPSILON, method=RWR_PROPAGATION,
                              num_iterations=PROPAGATE_ITERATIONS, smooth=PROPAGATE_SMOOTH,
                              prior_weight_func=abs):
@@ -25,8 +25,18 @@ def generate_feature_columns(network, experiments_dict,
     matrix = generate_similarity_matrix(network, alpha=alpha, method=method)
 
     # All edges endpoints in the graph
-    u_nodes = list(map(lambda e: e[0], network.edges))
-    v_nodes = list(map(lambda e: e[1], network.edges))
+    if edges_to_direct:
+        distinct_edges = edges_to_direct
+    else:
+        distinct_edges = network.edges
+        if isinstance(network, nx.DiGraph):
+            distinct_edges = set(distinct_edges)
+            distinct_edges = list(distinct_edges.intersection(
+                list(map(lambda e: (e[1], e[0]), distinct_edges))))
+            distinct_edges = list(filter(lambda e: (e[1], e[0]) not in distinct_edges, distinct_edges))
+
+    u_nodes = list(map(lambda e: e[0], distinct_edges))
+    v_nodes = list(map(lambda e: e[1], distinct_edges))
     u_indexes = list(map(lambda node: gene_to_idx[node], u_nodes))
     v_indexes = list(map(lambda node: gene_to_idx[node], v_nodes))
 
@@ -122,7 +132,7 @@ def orient_edges(scores, orientation_epsilon=ORIENTATION_EPSILON):
 
     oriented_edges = list(potential_oriented_edges.intersection(edges_to_annotate))
     inverted_edges = list(map(lambda e: (e[1], e[0]), potential_inverted_edges.intersection(edges_to_annotate)))
-
+    assert set(oriented_edges).intersection(inverted_edges) == set()
     annotated_edges = oriented_edges
     annotated_edges.extend(inverted_edges)
 

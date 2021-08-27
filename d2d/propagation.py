@@ -16,6 +16,8 @@ PROPAGATE_SMOOTH = 0.3   # For kernel propagation
 def generate_similarity_matrix(graph, alpha, method):
     if method == RWR_PROPAGATION:
         matrix = nx.to_scipy_sparse_matrix(graph, graph.nodes)
+        if isinstance(graph, nx.DiGraph):
+            matrix = matrix + matrix.T
         norm_matrix = sparse.diags(1 / np.sqrt(matrix.sum(0).A1))
         matrix = norm_matrix * matrix * norm_matrix
         return alpha * matrix

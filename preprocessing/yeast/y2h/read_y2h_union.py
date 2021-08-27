@@ -18,6 +18,7 @@ def get_y2h_union_network(src_path=RAW_YEAST_Y2H_PATH, dst_path=GENERATED_YEAST_
 
         graph = nx.Graph()
         graph.add_edges_from(edges)
+        graph.remove_edges_from(nx.selfloop_edges(graph))
         nx.write_gpickle(graph, dst_path)
         return graph
 

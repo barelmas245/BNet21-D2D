@@ -8,7 +8,7 @@ from preprocessing.yeast.consts import RAW_MACISAAC_PDIS_DATA_PATH, GENERATED_MA
 
 def get_kpis(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH,
              dst_path=GENERATED_BREITKREUTZ_ANNOTATIONS_PATH,
-             net_type='biogrid', filter_by_net=True, force=False):
+             net_type='biogrid', filter_by_net=False, force=False):
     dst_path = str(dst_path).format(net_type)
     if os.path.isfile(dst_path) and not force:
         with open(dst_path, 'r') as f:
@@ -45,7 +45,7 @@ def get_kpis(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH,
                     raise Exception()
 
             # Do not include both direction edges
-            if edge in true_annotations_list:
+            if edge in true_annotations_list or (edge[1], edge[0]) in true_annotations_list:
                 continue
             true_annotations_list.append(edge)
 
@@ -57,7 +57,7 @@ def get_kpis(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH,
 
 def get_pdis(src_path=RAW_MACISAAC_PDIS_DATA_PATH,
              dst_path=GENERATED_MACISAAC_PDIS_PATH,
-             net_type='biogrid', filter_by_net=True, force=False):
+             net_type='biogrid', filter_by_net=False, force=False):
     dst_path = str(dst_path).format(net_type)
     if os.path.isfile(dst_path) and not force:
         with open(dst_path, 'r') as f:
@@ -90,30 +90,29 @@ def get_pdis(src_path=RAW_MACISAAC_PDIS_DATA_PATH,
             if net_type == 'biogrid':
                 for target in targets:
                     mapped_target = mapper.get(target)
-                    if target in net:
-                        real_target = target
-                    elif mapped_target in net:
-                        real_target = mapped_target
-                    else:
-                        continue
+                    real_target = mapped_target or target
                     if filter_by_net and source in net and real_target in net:
                         if (real_target, source) in pdis:
                             continue
-                    if source != real_target:
+                    if real_target and source != real_target:
                         pdis.append((source, real_target))
             elif net_type == 'y2h':
                 mapped_source = mapper.get(source)
                 for target in targets:
-                    if mapped_source in net and target in net and mapped_source != target:
+                    if filter_by_net and mapped_source in net and target in net:
                         if (target, mapped_source) in pdis:
                             continue
-                        else:
-                            pdis.append((mapped_source, target, 1))
+                    if mapped_source and mapped_source != target:
+                        pdis.append((mapped_source, target))
             else:
                 raise ValueError("Unsupported network type")
 
+        pdis = list(filter(lambda e: (e[1], e[0]) not in pdis, pdis))
+
         with open(dst_path, 'w') as f:
             f.write(json.dumps(list(map(lambda x: (x[0], x[1]), pdis))))
+
+    return pdis
 
 
 if __name__ == '__main__':
