@@ -3,8 +3,7 @@ import numpy as np
 import json
 import os
 
-from preprocessing.yeast.biogrid.read_biogrid import get_biogrid_network
-from preprocessing.yeast.y2h.read_y2h_union import get_y2h_union_network
+from preprocessing.yeast.networks import get_undirected_net
 from preprocessing.yeast.consts import RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH, GENERATED_HOLSTEGE_EXPRESSIONS_PATH
 
 
@@ -17,11 +16,10 @@ def get_gene_expressions_data(src_path=RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH,
             return json.load(f)
     else:
         if filter_by_net:
+            net = get_undirected_net(net_type)
             if net_type == 'biogrid':
-                net = get_biogrid_network()
                 index_col = 3
             elif net_type == 'y2h':
-                net = get_y2h_union_network()
                 index_col = 2
             else:
                 raise ValueError("Unsupported network type")

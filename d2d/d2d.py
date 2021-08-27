@@ -132,6 +132,7 @@ def orient_edges(scores, orientation_epsilon=ORIENTATION_EPSILON):
     return directed_network, annotated_edges
 
 
+# TODO: precision & recall
 # def get_recall_precision(feature_columns, reverse_columns, directed_interactions):
 #     directed_feature_columns, directed_reverse_columns, directed_feature_scores, directed_reverse_scores = \
 #         get_training_features_and_scores(feature_columns, reverse_columns, directed_interactions)

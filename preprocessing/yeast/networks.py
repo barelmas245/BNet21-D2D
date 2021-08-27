@@ -15,12 +15,7 @@ KPIS = r'C:\git\BNet21-D2D\sources\yeast\generated\breitkeurtz_annotations.json'
 
 
 def direct_and_enrich_net(net_type="biogrid"):
-    if net_type == 'biogrid':
-        net = get_biogrid_network(force=False)
-    elif net_type == 'y2h':
-        net = get_y2h_union_network(force=False)
-    else:
-        raise ValueError("Unsupported network type")
+    net = get_undirected_net(net_type)
 
     with open(str(GENERATED_BREITKREUTZ_ANNOTATIONS_PATH).format(net_type), 'r') as f:
         kpis = json.load(f)
@@ -41,6 +36,17 @@ def direct_and_enrich_net(net_type="biogrid"):
     nx.write_gpickle(directed_graph, str(GENERATED_YEAST_DIRECTED_NET_PATH).format(net_type))
 
     return directed_graph
+
+
+def get_undirected_net(net_type='biogrid'):
+    if net_type == 'biogrid':
+        net = get_biogrid_network(force=False)
+        return net
+    elif net_type == 'y2h':
+        net = get_y2h_union_network(force=False)
+        return net
+    else:
+        raise ValueError("Unsupported network type")
 
 
 if __name__ == '__main__':

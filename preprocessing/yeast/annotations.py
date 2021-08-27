@@ -1,8 +1,7 @@
 import json
 import os
 
-from preprocessing.yeast.biogrid.read_biogrid import get_biogrid_network
-from preprocessing.yeast.y2h.read_y2h_union import get_y2h_union_network
+from preprocessing.yeast.networks import get_undirected_net
 from preprocessing.yeast.consts import RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH, GENERATED_BREITKREUTZ_ANNOTATIONS_PATH
 from preprocessing.yeast.consts import RAW_MACISAAC_PDIS_DATA_PATH, GENERATED_MACISAAC_PDIS_PATH, PDI_MAPPER
 
@@ -17,12 +16,7 @@ def get_kpis(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH,
             # Represent edges as tuples and not list
             return list(map(lambda e: tuple(e), true_annotations_list))
     else:
-        if net_type == 'biogrid':
-            net = get_biogrid_network()
-        elif net_type == 'y2h':
-            net = get_y2h_union_network()
-        else:
-            raise ValueError("Unsupported network type")
+        net = get_undirected_net(net_type)
         genes = net.nodes
 
         true_annotations_list = []
@@ -64,18 +58,14 @@ def get_kpis(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH,
 def get_pdis(src_path=RAW_MACISAAC_PDIS_DATA_PATH,
              dst_path=GENERATED_MACISAAC_PDIS_PATH,
              net_type='biogrid', filter_by_net=True, force=False):
+    dst_path = str(dst_path).format(net_type)
     if os.path.isfile(dst_path) and not force:
         with open(dst_path, 'r') as f:
             true_annotations_list = json.load(f)
             # Represent edges as tuples and not list
             return list(map(lambda e: tuple(e), true_annotations_list))
     else:
-        if net_type == 'biogrid':
-            net = get_biogrid_network(force=False)
-        elif net_type == 'y2h':
-            net = get_y2h_union_network(force=False)
-        else:
-            raise ValueError("Unsupported network type")
+        net = get_undirected_net(net_type)
 
         mapper = dict()
         mapper_path = str(PDI_MAPPER).format(net_type)

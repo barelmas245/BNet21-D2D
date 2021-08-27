@@ -13,7 +13,7 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
     directed_feature_columns, directed_reverse_columns, directed_feature_scores, directed_reverse_scores = \
         get_training_features_and_scores(feature_columns, reverse_columns, directed_interactions)
 
-    cv = StratifiedKFold(n_splits=12)
+    cv = StratifiedKFold(n_splits=7)
     tps = []
     falses = []
     unannotated = []
@@ -26,7 +26,7 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
         training_directed_interactions = list(directed_interactions_columns.iloc[train].index)
         test_directed_interactions = list(directed_interactions_columns.iloc[test].index)
 
-        classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
+        classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.05)
         scores = score_network(directed_feature_columns, directed_reverse_columns,
                                training_directed_interactions, classifier)
         annotated_network, annotated_edges = orient_edges(scores, orientation_epsilon=ORIENTATION_EPSILON)
@@ -35,7 +35,7 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
         new_annotated_edges = set(annotated_edges).difference(training_directed_interactions)
         true_positive = new_annotated_edges.intersection(test_directed_interactions)
         false_annotations = new_annotated_edges.difference(test_directed_interactions)
-        unannotated_num = len(directed_interactions) - len(annotated_edges)
+        unannotated_num = len(directed_interactions) - len(new_annotated_edges)
         print(f"TP: {len(true_positive)} out of {len(test_directed_interactions)}")
         print(f"false annotations: {len(false_annotations)} out of {len(test_directed_interactions)}")
         print(f"Not annotated: {unannotated_num} out of {len(test_directed_interactions)}")
@@ -50,7 +50,7 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
 
 
 if __name__ == '__main__':
-    network, true_annotations, experiments = read_data()
+    network, true_annotations, experiments = read_data(net_type='biogrid', undirected=True)
     feature_cols, reverse_cols = get_features(network, experiments,
                                               output_directory=YEAST_RESULTS_DIR, force=True, save=True)
     cross_validation(feature_cols, reverse_cols, true_annotations)
