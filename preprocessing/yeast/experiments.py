@@ -39,7 +39,7 @@ def get_gene_expressions_data(src_path=RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH,
                 continue
             targets_dict = raw_data[src_gene].to_dict()
             # Filter out targets which has no significant expression or has negative score
-            targets_dict = {key: value for key, value in targets_dict.items() if value <= - np.log2(1.7)}
+            targets_dict = {key: value for key, value in targets_dict.items() if abs(value) >= np.log2(1.7)}
             # Filter out targets which are also in the sources
             targets_dict = {key: value for key, value in targets_dict.items() if key not in all_sources}
 
