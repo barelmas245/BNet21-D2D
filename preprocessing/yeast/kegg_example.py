@@ -9,6 +9,8 @@ KEGG_GENERATED_FOLDER = YEAST_GENERATED_SOURCES_DIR / 'KEGG'
 
 
 if __name__ == '__main__':
+    all_kegg_annotations = []
+    all_experiments = dict()
     for kegg_file_path in KEGG_FOLDER.iterdir():
         if kegg_file_path.is_file():
             with open(kegg_file_path, 'r') as f:
@@ -53,3 +55,20 @@ if __name__ == '__main__':
                 map(lambda target: (str(target), 1), targets))
             with open(KEGG_GENERATED_FOLDER / kegg_file_path.stem / 'experiment.json', 'w') as f:
                 json.dump(experiment_dict, f, indent=2)
+
+            all_kegg_annotations.extend(true_annotations)
+            all_experiments.update(experiment_dict)
+
+    all_kegg_annotations = set(all_kegg_annotations)
+
+    g = nx.Graph()
+    g.add_edges_from(all_kegg_annotations)
+    nx.write_gpickle(g, KEGG_GENERATED_FOLDER / 'net.gpickle')
+
+    all_kegg_annotations = all_kegg_annotations.difference(map(
+        lambda e: (e[1], e[0]), all_kegg_annotations))
+
+    with open(KEGG_GENERATED_FOLDER / 'all_kegg_annotations.json', 'w') as f:
+        json.dump(list(all_kegg_annotations), f)
+    with open(KEGG_GENERATED_FOLDER / 'all_experiments.json', 'w') as f:
+        json.dump(all_experiments, f, indent=2)
