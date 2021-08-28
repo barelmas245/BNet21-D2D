@@ -7,7 +7,7 @@ from d2d.d2d import orient_edges, ORIENTATION_EPSILON
 from runs.features import get_features
 from preprocessing.yeast.kegg_example import KEGG_GENERATED_FOLDER
 
-KEGG_NAME = 'sce00261'
+KEGG_NAME = 'sce00010'
 
 PRIOR_WEIGHT_FUNCS = {
     'unweighted': lambda x: 1,
