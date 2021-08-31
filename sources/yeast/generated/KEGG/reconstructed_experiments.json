@@ -25,12 +25,6 @@
     "YBR020W": 1,
     "YDR009W": 1
   },
-  "YBR159W": {
-    "YJR019C": 1,
-    "YCR034W": 1,
-    "YJL196C": 1,
-    "YLR372W": 1
-  },
   "YMR083W,YOL086C": {
     "YER073W": 1,
     "YMR110C": 1,
@@ -40,32 +34,16 @@
     "YPL061W": 1,
     "YGL205W": 1
   },
-  "YGL012W": {
-    "YML008C": 1
-  },
-  "YML110C": {
-    "YDR538W": 1,
-    "YOL096C": 1
-  },
-  "YBL099W,YBR127C,YDL185W,YJR121W,YGL008C": {
-    "YBR011C": 1,
-    "YMR267W": 1
-  },
-  "YPR035W": {
-    "YDL215C": 1,
-    "YAL062W": 1,
-    "YOR375C": 1,
-    "YJL088W": 1,
-    "YHR018C": 1
-  },
-  "YOL061W": {
-    "YBR111C": 1,
-    "YDR305C": 1,
-    "YKL001C": 1,
-    "YIR027C": 1
-  },
   "YMR300C": {
     "YLR359W": 1,
     "YMR250W": 1
+  },
+  "YDR158W": {
+    "YDL078C": 1,
+    "YOL126C": 1
+  },
+  "YER073W,YMR110C,YMR169C,YMR170C,YOR374W,YPL061W": {
+    "YCR105W": 1,
+    "YMR318C": 1
   }
 }
