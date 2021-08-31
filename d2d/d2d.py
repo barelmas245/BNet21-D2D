@@ -3,14 +3,6 @@ import pandas
 import numpy as np
 import networkx as nx
 
-from sklearn.metrics import precision_recall_curve
-from sklearn import linear_model
-from sklearn.model_selection import cross_validate
-from sklearn.metrics import roc_curve, auc
-from sklearn.utils import shuffle
-from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegression
-
 from d2d.propagation import generate_similarity_matrix, propagate, \
     RWR_PROPAGATION, PROPAGATE_ALPHA, PROPAGATE_EPSILON, PROPAGATE_ITERATIONS, PROPAGATE_SMOOTH
 
