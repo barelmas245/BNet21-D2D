@@ -51,6 +51,7 @@ def run_yeast_kegg_experiment(kegg_name=KEGG_NAME, prior_weight_func_name='abs')
 if __name__ == '__main__':
     for kegg_file_path in KEGG_FOLDER.iterdir():
         kegg_name = kegg_file_path.stem
-        print(f"######### KEGG {kegg_name} #########")
-        run_yeast_kegg_experiment(kegg_name=kegg_name,
-                                  prior_weight_func_name='unweighted')
+        if kegg_name.startswith('sce'):
+            print(f"######### KEGG {kegg_name} #########")
+            run_yeast_kegg_experiment(kegg_name=kegg_name,
+                                      prior_weight_func_name='unweighted')
