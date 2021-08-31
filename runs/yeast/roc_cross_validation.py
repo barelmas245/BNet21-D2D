@@ -13,9 +13,9 @@ from runs.yeast.consts import YEAST_RESULTS_DIR, CROSS_VALIDATION_ROC_PATH
 
 
 PRIOR_WEIGHT_FUNCS = {
-    'unweighted': lambda x: 1,
-    'abs': abs,
-    'exp abs': lambda x: 2 ** abs(x)
+    'uniform': lambda x: 1,
+    'absolute': abs,
+    'exp absolute': lambda x: 2 ** abs(x)
 }
 
 
@@ -65,7 +65,7 @@ def roc_cross_validation(net_type, undirected):
         ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
                 label='Chance', alpha=.8)
         ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-               title=f"ROC curve - {propagation_method} diffusion")
+               title=f"ROC curve - diffuse with {propagation_method} prior")
         ax.legend(loc="lower right")
 
         plt.savefig(str(CROSS_VALIDATION_ROC_PATH).format(propagation_method))
