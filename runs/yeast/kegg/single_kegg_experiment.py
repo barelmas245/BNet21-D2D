@@ -5,7 +5,7 @@ import networkx as nx
 
 from d2d.d2d import orient_edges, ORIENTATION_EPSILON
 from runs.features import get_features
-from preprocessing.yeast.kegg_example import KEGG_GENERATED_FOLDER
+from preprocessing.yeast.kegg_example import KEGG_GENERATED_FOLDER, KEGG_FOLDER
 
 KEGG_NAME = 'sce00010'
 
@@ -16,15 +16,16 @@ PRIOR_WEIGHT_FUNCS = {
 }
 
 
-def run_yeast_kegg_experiment(prior_weight_func_name='abs'):
-    network = nx.read_gpickle(KEGG_GENERATED_FOLDER / KEGG_NAME / 'net.gpickle')
+def run_yeast_kegg_experiment(kegg_name=KEGG_NAME, prior_weight_func_name='abs'):
+    kegg_folder = KEGG_GENERATED_FOLDER / kegg_name
+    network = nx.read_gpickle(kegg_folder / 'net.gpickle')
 
-    with open(KEGG_GENERATED_FOLDER / KEGG_NAME / 'kegg_annotations.json', 'r') as f:
+    with open(kegg_folder / 'kegg_annotations.json', 'r') as f:
         true_annotations_list = json.load(f)
         # Represent edges as tuples and not list
         true_annotations = list(map(lambda e: tuple(e), true_annotations_list))
 
-    with open(KEGG_GENERATED_FOLDER / KEGG_NAME / 'experiment.json', 'r') as f:
+    with open(kegg_folder / 'experiment.json', 'r') as f:
         experiments = json.load(f)
 
     experiment = list(experiments.keys())[0]
@@ -42,10 +43,14 @@ def run_yeast_kegg_experiment(prior_weight_func_name='abs'):
     unannotated_num = len(feature_cols.index) - len(annotated_edges)
 
     print(f"Total edges to annotate: {len(feature_cols.index)}")
-    print(f"TP: {len(true_positive)} out of {len(true_annotations)}")
-    print(f"false annotations: {len(false_annotations)} out of {len(true_annotations)}")
-    print(f"undetermined annotated: {unannotated_num} out of {len(true_annotations)}")
+    print(f"TP: {len(true_positive)} out of {len(true_annotations)} ({len(true_positive) / len(true_annotations)})")
+    print(f"false annotations: {len(false_annotations)} out of {len(true_annotations)} ({len(false_annotations) / len(true_annotations)})")
+    print(f"undetermined annotated: {unannotated_num} out of {len(true_annotations)} ({unannotated_num / len(true_annotations)})")
 
 
 if __name__ == '__main__':
-    run_yeast_kegg_experiment(prior_weight_func_name='unweighted')
+    for kegg_file_path in KEGG_FOLDER.iterdir():
+        kegg_name = kegg_file_path.stem
+        print(f"######### KEGG {kegg_name} #########")
+        run_yeast_kegg_experiment(kegg_name=kegg_name,
+                                  prior_weight_func_name='unweighted')

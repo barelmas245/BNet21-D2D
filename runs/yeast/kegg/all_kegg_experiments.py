@@ -38,9 +38,9 @@ def run_yeast_all_kegg_experiments(prior_weight_func_name='abs'):
     opposite_edges = list(map(lambda e: (e[1], e[0]), annotated_edges))
     false_annotations = set(opposite_edges).intersection(true_annotations)
 
-    print(f"Total edges to annotate: {len(true_annotations)}")
-    print(f"TP: {len(true_positive)} out of {len(true_annotations)}")
-    print(f"false annotations: {len(false_annotations)} out of {len(true_annotations)}")
+    print(f"Total edges to annotate: {len(feature_cols.index)}")
+    print(f"TP: {len(true_positive)} out of {len(true_annotations)} ({len(true_positive) / len(true_annotations)})")
+    print(f"false annotations: {len(false_annotations)} out of {len(true_annotations)} ({len(false_annotations) / len(true_annotations)})")
 
 
 if __name__ == '__main__':

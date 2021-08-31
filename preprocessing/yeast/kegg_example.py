@@ -34,6 +34,10 @@ if __name__ == '__main__':
     nx.write_gpickle(reconstructed_g, r'C:\git\BNet21-D2D\sources\yeast\generated\KEGG\reconstructed_net.gpickle')
 
     for kegg_file_path in KEGG_FOLDER.iterdir():
+        kegg_folder = KEGG_GENERATED_FOLDER / kegg_file_path.stem
+        if not kegg_folder.is_dir():
+            kegg_folder.mkdir()
+
         if kegg_file_path.is_file():
             with open(kegg_file_path, 'r') as f:
                 data = f.read()
@@ -111,6 +115,8 @@ if __name__ == '__main__':
         sources = sources_str.split(',')
         all_sources.extend(sources)
         all_targets.extend(list(all_experiments[sources_str].keys()))
+    all_sources = list(set(all_sources).difference(all_targets))
+    all_targets = list(set(all_targets).difference(all_sources))
     with open(r'C:\git\BNet21-D2D\sources\yeast\generated\KEGG\all_sources.json', 'w') as f:
         f.write(json.dumps(' '.join(all_sources)))
     with open(r'C:\git\BNet21-D2D\sources\yeast\generated\KEGG\all_targets.json', 'w') as f:
