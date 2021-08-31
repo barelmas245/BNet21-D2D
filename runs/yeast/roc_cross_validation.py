@@ -60,6 +60,8 @@ def roc_cross_validation(net_type, undirected):
                     label=r'%s - Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (prior_weight_option, mean_auc, std_auc),
                     lw=2, alpha=.8)
         plt.figure(fig)
+        plt.xlabel("False Positive rate")
+        plt.ylabel("True Positive rate")
         ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
                 label='Chance', alpha=.8)
         ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
