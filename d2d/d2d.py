@@ -3,14 +3,6 @@ import pandas
 import numpy as np
 import networkx as nx
 
-from sklearn.metrics import precision_recall_curve
-from sklearn import linear_model
-from sklearn.model_selection import cross_validate
-from sklearn.metrics import roc_curve, auc
-from sklearn.utils import shuffle
-from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegression
-
 from d2d.propagation import generate_similarity_matrix, propagate, \
     RWR_PROPAGATION, PROPAGATE_ALPHA, PROPAGATE_EPSILON, PROPAGATE_ITERATIONS, PROPAGATE_SMOOTH
 
@@ -140,67 +132,3 @@ def orient_edges(scores, orientation_epsilon=ORIENTATION_EPSILON):
     directed_network.add_edges_from(annotated_edges)
 
     return directed_network, annotated_edges
-
-
-# TODO: precision & recall
-# def get_recall_precision(feature_columns, reverse_columns, directed_interactions):
-#     directed_feature_columns, directed_reverse_columns, directed_feature_scores, directed_reverse_scores = \
-#         get_training_features_and_scores(feature_columns, reverse_columns, directed_interactions)
-#
-#     cv = StratifiedKFold(n_splits=12)
-#
-#     all_proba = []
-#     all_ytest = []
-#     all_names = []
-#
-#     sum_coef_zero = 0
-#
-#     # Choose folds so tonot mix the true instances with the same interactions' false
-#     folds = []
-#     import random
-#     random.shuffle(directed_interactions)
-#     directed_interactions_columns = pandas.DataFrame(index=directed_interactions)
-#     for i, (train_index, test_index) in enumerate(cv.split(directed_interactions, np.ones(len(directed_interactions)))):
-#         training_directed_interactions = directed_interactions_columns.iloc[train_index].index
-#         test_directed_interactions = directed_interactions_columns.iloc[test_index].index
-#         # # Choose the corresponding false (this is done to prevent information leak caused by having one direction chosen
-#         # # once in the test set and the opposite direction chosen for the training)
-#         # EdgeTrue = (pred_ID2.iloc[train_index].astype(str) + "." + pred_ID1.iloc[train_index].astype(str))
-#         # IdxFalse = pred_name[pred_name.isin(EdgeTrue)].index
-#         # IdxFullTrain = np.append(IdxFalse.values, train_index)
-#         #
-#         # # The rest are the training
-#         # IdxFullTest = pred_name[~pred_name.index.isin(IdxFullTrain)].index
-#         folds.append((training_directed_interactions, test_directed_interactions))
-#
-#     for train_index, test_index in folds:
-#         xtrain, xtest = directed_feature_columns.loc[train_index], feature_columns.loc[test_index]
-#         # ytrain, ytest = pred_true.loc[train_index], pred_true.loc[test_index]
-#         # # name_test = pred_name.loc[test_index]
-#         # xtrain = xtrain.rank(axis='columns')
-#         # xtest = xtest.rank(axis='columns')
-#
-#         training_feature_columns, training_reverse_columns, training_feature_scores, training_reverse_scores = \
-#             get_training_features_and_scores(directed_feature_columns, directed_reverse_columns, directed_interactions)
-#
-#         training_columns = pandas.concat([training_feature_columns, training_reverse_columns])
-#         training_scores = np.append(training_feature_scores, training_reverse_scores)
-#
-#         clf = LogisticRegression(solver="liblinear", penalty="l1", C=0.007)
-#         score_network(directed_interactions_columns, reverse_columns, directed_interactions, classifier):
-#         test_prob = clf.fit(xtrain, ytrain).predict_proba(xtest)
-#
-#         all_proba.extend(test_prob)
-#         all_ytest.extend(ytest)
-#         # all_names.extend(name_test)
-#
-#     # roc_curve
-#     precision, recall, thresholds = precision_recall_curve(np.array(all_ytest), np.array(all_proba)[:, 1], pos_label=2)
-#     mean_auc = auc(recall, precision)
-#     rows, columns = feature_columns.shape
-#
-#     oriented_network = pandas.concat([pandas.DataFrame({'edge': all_names}), pandas.DataFrame({'edge': all_ytest}),
-#                                       pandas.DataFrame({'pval': np.array(all_proba)[:, 1]})], axis=1)
-#     oriented_network.columns = ['edge', 'true', 'pval']
-#
-#     return recall, precision, mean_auc, oriented_network, np.array(all_proba)[:, 1]

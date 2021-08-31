@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 
 from d2d.d2d import get_training_features_and_scores
-from d2d.propagation import PROPAGATE_METHODS
+from d2d.propagation import RWR_PROPAGATION
 from runs.yeast.data import read_data
 from runs.features import get_features
 from runs.yeast.consts import YEAST_RESULTS_DIR, CROSS_VALIDATION_ROC_PATH
@@ -22,11 +22,11 @@ PRIOR_WEIGHT_FUNCS = {
 def roc_cross_validation(net_type, undirected):
     network, true_annotations, experiments, edges_to_direct = read_data(net_type=net_type, undirected=undirected)
 
-    for propagation_method in PROPAGATE_METHODS:
+    for prior_weight_option in PRIOR_WEIGHT_FUNCS:
         fig, ax = plt.subplots()
-        for prior_weight_option in PRIOR_WEIGHT_FUNCS:
-            feature_cols, reverse_cols = get_features(network, experiments, edges_to_direct=edges_to_direct,
-                                                      output_directory=YEAST_RESULTS_DIR, method=propagation_method,
+        for alpha in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]:
+            feature_cols, reverse_cols = get_features(network, experiments, edges_to_direct=edges_to_direct, alpha=alpha,
+                                                      output_directory=YEAST_RESULTS_DIR, method=RWR_PROPAGATION,
                                                       prior_weight_func=PRIOR_WEIGHT_FUNCS[prior_weight_option],
                                                       force=True, save=False)
             logistic_regression_classifier = LogisticRegression(solver="liblinear", penalty="l1", C=0.001)
@@ -57,7 +57,7 @@ def roc_cross_validation(net_type, undirected):
             std_auc = np.std(aucs)
             plt.figure(fig)
             ax.plot(mean_fpr, mean_tpr,
-                    label=r'%s - Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (prior_weight_option, mean_auc, std_auc),
+                    label=r'alpha=%0.2f (AUC = %0.2f $\pm$ %0.2f)' % (alpha, mean_auc, std_auc),
                     lw=2, alpha=.8)
         plt.figure(fig)
         plt.xlabel("False Positive rate")
@@ -65,10 +65,10 @@ def roc_cross_validation(net_type, undirected):
         ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
                 label='Chance', alpha=.8)
         ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-               title=f"ROC curve - {propagation_method} diffusion")
+               title=f"Mean ROC curve - RWR diffusion, {prior_weight_option} prior")
         ax.legend(loc="lower right")
 
-        plt.savefig(str(CROSS_VALIDATION_ROC_PATH).format(propagation_method))
+        plt.savefig(str(CROSS_VALIDATION_ROC_PATH).format(f'{prior_weight_option}_prior'))
 
 
 if __name__ == '__main__':

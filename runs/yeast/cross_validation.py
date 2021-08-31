@@ -64,6 +64,6 @@ if __name__ == '__main__':
     print(f"Test annotations: {len(true_annotations)}")
 
     feature_cols, reverse_cols = get_features(network, experiments, edges_to_direct=edges_to_direct,
-                                              prior_weight_func=lambda x: 1, output_directory=YEAST_RESULTS_DIR,
+                                              prior_weight_func=lambda x: abs(x), output_directory=YEAST_RESULTS_DIR,
                                               force=True, save=True)
     cross_validation(feature_cols, reverse_cols, true_annotations)
