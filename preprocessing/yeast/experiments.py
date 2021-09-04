@@ -17,7 +17,7 @@ def get_gene_expressions_data(src_path=RAW_HOLSTEGE_EXPRESSIONS_DATA_PATH,
     else:
         if filter_by_net:
             net = get_undirected_net(net_type)
-            if net_type == 'biogrid':
+            if net_type in ['biogrid', 'anat']:
                 index_col = 3
             elif net_type == 'y2h':
                 index_col = 2

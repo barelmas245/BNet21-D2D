@@ -55,7 +55,7 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
 
 
 if __name__ == '__main__':
-    net_type = 'biogrid'
+    net_type = 'anat'
     undirected = True
     network, true_annotations, experiments, edges_to_direct = read_data(net_type=net_type, undirected=undirected)
 
