@@ -3,6 +3,7 @@ import networkx as nx
 
 from preprocessing.yeast.biogrid.read_biogrid import get_biogrid_network
 from preprocessing.yeast.y2h.read_y2h_union import get_y2h_union_network
+from preprocessing.yeast.anat.read_anat import get_anat_yeast_network
 
 from preprocessing.yeast.consts import GENERATED_YEAST_DIRECTED_NET_PATH,\
     GENERATED_BREITKREUTZ_ANNOTATIONS_PATH, GENERATED_MACISAAC_PDIS_PATH, \
@@ -42,6 +43,8 @@ def get_undirected_net(net_type='biogrid'):
         net = get_biogrid_network(force=False)
     elif net_type == 'y2h':
         net = get_y2h_union_network(force=False)
+    elif net_type == 'anat':
+        net = get_anat_yeast_network(force=False)
     else:
         raise ValueError("Unsupported network type")
     return net

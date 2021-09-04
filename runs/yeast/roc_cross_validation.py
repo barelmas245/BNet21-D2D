@@ -72,4 +72,4 @@ def roc_cross_validation(net_type, undirected):
 
 
 if __name__ == '__main__':
-    roc_cross_validation(net_type='biogrid', undirected=True)
+    roc_cross_validation(net_type='anat', undirected=True)

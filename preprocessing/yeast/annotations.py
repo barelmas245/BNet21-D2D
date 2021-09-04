@@ -24,7 +24,7 @@ def get_kpis(src_path=RAW_BREITKREUTZ_ANNOTATIONS_DATA_PATH,
             data = f.readlines()
         for entry in data[1:]:
             common_name1, sys_name1, common_name2, sys_name2, assay, method, action, modification, pub_source, ref, note = entry.replace('\n', '').split('\t')
-            if net_type == 'biogrid':
+            if net_type in ['biogrid', 'anat']:
                 gene1 = common_name1
                 gene2 = common_name2
             elif net_type == 'y2h':
