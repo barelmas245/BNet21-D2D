@@ -1,5 +1,6 @@
 import json
-from preprocessing.yeast.networks import get_undirected_net, direct_and_enrich_net
+from preprocessing.yeast.networks import get_undirected_net, enrich_net_with_directed_kpis, \
+    direct_and_enrich_net_with
 from preprocessing.yeast.annotations import get_kpis
 from preprocessing.yeast.experiments import get_gene_expressions_data
 from preprocessing.yeast.consts import GENERATED_MACISAAC_PDIS_PATH, GENERATED_EDGES_TO_DIRECT_PATH
@@ -9,9 +10,9 @@ def read_data(net_type='biogrid', undirected=True):
     if undirected:
         network = get_undirected_net(net_type=net_type)
         true_annotations_list = get_kpis(net_type=net_type)
-        edges_to_direct = None
+        edges_to_direct = true_annotations_list
     else:
-        network = direct_and_enrich_net(net_type=net_type)
+        network = enrich_net_with_directed_kpis(net_type=net_type)
         with open(str(GENERATED_MACISAAC_PDIS_PATH).format(net_type), 'r') as f:
             true_annotations_list = json.load(f)
         with open(str(GENERATED_EDGES_TO_DIRECT_PATH).format(net_type), 'r') as f:

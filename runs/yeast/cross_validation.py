@@ -1,4 +1,3 @@
-import json
 import pandas
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -32,7 +31,6 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
                                training_directed_interactions, classifier)
         annotated_network, annotated_edges = orient_edges(scores, orientation_epsilon=ORIENTATION_EPSILON)
 
-        # assert set(annotated_edges).intersection(training_directed_interactions) == set(training_directed_interactions)
         new_annotated_edges = set(annotated_edges).difference(training_directed_interactions)
         true_positive = new_annotated_edges.intersection(test_directed_interactions)
         opposite_edges = list(map(lambda e: (e[1], e[0]), new_annotated_edges))
