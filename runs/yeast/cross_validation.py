@@ -15,6 +15,7 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
 
     cv = StratifiedKFold(n_splits=10)
     tps = []
+    confidence = []
     falses = []
     unannotated = []
 
@@ -37,10 +38,20 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
         false_annotations = set(opposite_edges).intersection(test_directed_interactions)
         unannotated_num = len(test_directed_interactions) - len(true_positive) - len(false_annotations)
 
+        uv_edges = scores.index.intersection(true_positive)
+        uv_scores = scores['(u,v)'][uv_edges]
+        uv_scores = uv_scores.values
+        vu_edges = scores.index.intersection(list(map(lambda e: (e[1], e[0]), true_positive)))
+        vu_scores = scores['(v,u)'][vu_edges]
+        vu_scores = vu_scores.values
+        true_positive_scores = np.concatenate((uv_scores, vu_scores))
+        confidence.append(np.mean(true_positive_scores))
+
         print(f"Total edges to annotate: {len(test_directed_interactions)}")
         print(f"TP: {len(true_positive)} out of {len(test_directed_interactions)}")
         print(f"false annotations: {len(false_annotations)} out of {len(test_directed_interactions)}")
         print(f"undetermined annotated: {unannotated_num} out of {len(test_directed_interactions)}")
+        print(f"Mean TP confidence score: {np.mean(true_positive_scores)}")
 
         tps.append(len(true_positive) / len(test_directed_interactions))
         falses.append(len(false_annotations) / len(test_directed_interactions))
@@ -50,10 +61,11 @@ def cross_validation(feature_columns, reverse_columns, directed_interactions):
     print(f"mean true positives: {np.mean(tps)}")
     print(f"mean false annotations: {np.mean(falses)}")
     print(f"mean unannotated: {np.mean(unannotated)}")
+    print(f"Mean TP confidence score: {np.mean(confidence)}")
 
 
 if __name__ == '__main__':
-    net_type = 'anat'
+    net_type = 'biogrid'
     undirected = True
     network, true_annotations, experiments, edges_to_direct = read_data(net_type=net_type, undirected=undirected)
 
